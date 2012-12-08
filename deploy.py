@@ -9,12 +9,14 @@ sys.path.append(dirname(dirname(abspath(__file__))))
 
 from fabric.context_managers import cd, prefix
 from fabric.state import env
-from fabric.api import run
+from fabric.api import run, put
 from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 
 import config
+
+env.host = 'localhost'
 
 def _pretty_print(str):
 	print('[%s] INFO: %s' % (env.host, str))
@@ -74,27 +76,68 @@ def src_prepare(file, dir='', branch = ''):
 
 	_pretty_print('Archive prepare finished')
 
-def src_upload(file, host):
+def src_upload(file, user, host, dir):
+	_pretty_print("Starting file upload.")
+	put(file, '%s@%s:%s' % (user, host, dir))
+	_pretty_print("File upload finished")
+
+def	src_remote_extract(file, file_dir, dest_dir, user, host):
+	_pretty_print("Starting remote extract")
+
+	env.hosts = [host]
+	env.user = user
+	env.use_ssh_config = True
+
+	with cd(file_dir):
+		run('tar xvf %s -C %s' % (file, dest_dir))
+
+	_pretty_print("Remote extract finished")
+
+def	src_remote_deploy(src_dir, dst_dir, user, host):
+	_pretty_print("Starting remote deployment")
+
+	env.hosts = [host]
+	env.user = user
+	env.use_ssh_config = True
+
+	run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
+	run('rm previous')
+	run('mv current previous')
+	run('ln -s %s current' % src_dir)
+	_pretty_print("Remote deployment finished")
 	pass
 
-def	src_remote_extract(file, host):
-	pass
+def	src_remote_rollback(dir, host, user):
+	_pretty_print("Starting remote rollback")
 
-def	src_remote_deploy(src_dir, dst_dir):
-	pass
-
-def	src_remote_rollback(dir):
-	pass
+	env.hosts = [host]
+	env.user = user
+	env.use_ssh_config = True
+	with cd(dir):
+		run('mv current current.prerollback')
+		run('mv previous current')
+	_pretty_print("Remote rollback finished")
 
 def deploy():
-	pass
+	src_clone()
+	src_prepare()
+	src_remote_extract()
+	src_remote_deploy()
+
 def	mysql_db_dump():
 	pass
+
 def	mysql_db_restore():
 	pass
+
 def	mysql_db_clone():
 	pass
+
 def	mysql_db_migrate():
 	pass
+
 def	db_migrate():
-	pass
+	mysql_db_dump()
+	mysql_db_restore()
+	mysql_db_clone()
+	mysql_db_migrate()
