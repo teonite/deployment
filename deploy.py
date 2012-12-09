@@ -15,7 +15,9 @@ from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 
-import config
+import ConfigParser
+
+#import config
 
 env.host = 'localhost'
 
@@ -23,9 +25,45 @@ def _pretty_print(str):
 	print('[%s] INFO: %s' % (env.host, str))
 
 def _prefix():
-	return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
+	return
+	#return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
 
-def src_clone(dir='', branch = ''):
+def _config_section_map(Config, section):
+	_pretty_print('Reading section %s' % section)
+	dict1 = {}
+	options = Config.options(section)
+	for option in options:
+		try:
+			dict1[option] = Config.get(section, option)
+			if dict1[option] == -1:
+				_pretty_print("skip: %s" % option)
+		except:
+			_pretty_print("exception on %s!" % option)
+			dict1[option] = None
+	_pretty_print('Reading finished. Returning.')
+	return dict1
+
+def _parse_config(filename):
+	_pretty_print("Parsing config file: %s" % filename)
+	try:
+		config = ConfigParser.ConfigParser()
+		config.read(filename)
+		conf = _config_section_map(config, 'General')
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
+		conf = {}
+
+	return conf
+
+def list_dir(dir_=None):
+	"""returns a list of files in a directory (dir_) as absolute paths"""
+	dir_ = dir_ or env.cwd
+	string_ = run("for i in %s*; do echo $i; done" % dir_)
+	files = string_.replace("\r","").split("\n")
+	return files
+
+def src_clone(dir='', branch = '', repo = ''):
 	_pretty_print('Repository clone start')
 
 	if len(dir) == 0:
@@ -36,8 +74,11 @@ def src_clone(dir='', branch = ''):
 		repo = Repo(dir)
 		_pretty_print('Repository found.')
 	except InvalidGitRepositoryError: #Repo doesn't exists
-		_pretty_print('Repository not found. Creating new one, using GIT_REPO from config.')
-		repo = Repo.clone_from(config.GIT_REPO, dir)
+		_pretty_print('Repository not found. Creating new one, using provided git url.')
+		if len(repo) == 0:
+			_pretty_print('Repository not selected. Returning.')
+			raise InvalidGitRepositoryError
+		repo = Repo.clone_from(repo, dir)
 		#repo.create_remote('origin', config.GIT_REPO)
 
 	_pretty_print('Fetching changes.')
@@ -101,12 +142,11 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 	env.user = user
 	env.use_ssh_config = True
 
-	run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
+	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
 	run('rm previous')
 	run('mv current previous')
 	run('ln -s %s current' % src_dir)
 	_pretty_print("Remote deployment finished")
-	pass
 
 def	src_remote_rollback(dir, host, user):
 	_pretty_print("Starting remote rollback")
@@ -121,11 +161,20 @@ def	src_remote_rollback(dir, host, user):
 
 def deploy():
 	_pretty_print("Starting deployment.")
-	src_clone()
-	src_prepare()
-	src_remote_extract()
-	src_remote_deploy()
-	_pretty_print("Deployment finished.")
+
+	try:
+		config = _parse_config("config.ini")
+
+		src_clone(config['local_dir'], config['branch'], config['git_repo'])
+		src_prepare(config['file_name'], config['local_dir'], config['branch'])
+		src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
+		src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'])
+		src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
+
+		_pretty_print("Deployment finished.")
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def	mysql_db_dump(filename, database, dbuser, dbpassword, host, host_user):
 	_pretty_print('Starting MySQL dump.')
@@ -161,13 +210,6 @@ def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
 
 	_pretty_print('MySQL clone finished.')
 
-def list_dir(dir_=None):
-	"""returns a list of files in a directory (dir_) as absolute paths"""
-	dir_ = dir_ or env.cwd
-	string_ = run("for i in %s*; do echo $i; done" % dir_)
-	files = string_.replace("\r","").split("\n")
-	return files
-
 def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 	_pretty_print('Starting MySQL migrate')
 	env.hosts = [host]
@@ -180,7 +222,32 @@ def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 	_pretty_print('MySQL migrate finished.')
 
 def	db_migrate():
-	mysql_db_dump()
-	mysql_db_restore()
-	mysql_db_clone()
-	mysql_db_migrate()
+	_pretty_print("Starting database migration.")
+
+	try:
+		config = _parse_config("config.ini")
+
+		mysql_db_clone(config['mysql_database'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+
+		_pretty_print("Database migration finished.")
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+
+if __name__ == "__main__":
+	if not len(sys.argv[1]):
+		usage()
+		sys.exit()
+
+	s = sys.argv[1]
+	if s == 'install':
+		install()
+	elif s == 'deploy':
+		deploy()
+	elif s == 'upgrade':
+		upgrade()
+	elif s == 'dbsync':
+		dbsync()
+	else:
+		usage()
