@@ -235,19 +235,20 @@ def	db_migrate():
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
+def usage():
+	_pretty_print('Usage:')
+	_pretty_print(' - deploy() - deploys new version using config from config.ini')
+	_pretty_print(' - db_migrate() - migrate database to new version using config from config.ini')
+
 if __name__ == "__main__":
 	if not len(sys.argv[1]):
 		usage()
 		sys.exit()
 
 	s = sys.argv[1]
-	if s == 'install':
-		install()
-	elif s == 'deploy':
+	if s == 'deploy':
 		deploy()
-	elif s == 'upgrade':
-		upgrade()
-	elif s == 'dbsync':
-		dbsync()
+	elif s == 'db_migrate':
+		db_migrate()
 	else:
 		usage()
