@@ -67,7 +67,7 @@ def list_dir(dir_=None):
 	return files
 
 def src_clone(dir='', branch = '', repo = ''):
-	_pretty_print('Repository clone start: %s' % dir)
+	_pretty_print('[+] Repository clone start: %s' % dir)
 
 	if len(dir) == 0:
 		_pretty_print('Directory not selected, assuming current one.')
@@ -104,10 +104,10 @@ def src_clone(dir='', branch = '', repo = ''):
 #		_pretty_print('Pulling from \'%s\' branch' % branch)
 #		origin.pull(branch)
 
-	_pretty_print('Repository clone finished')
+	_pretty_print('[+] Repository clone finished')
 
 def src_prepare(file, dir='', branch = ''):
-	_pretty_print('Archive prepare start. Branch: %s' % branch)
+	_pretty_print('[+] Archive prepare start. Branch: %s' % branch)
 
 	try:
 		repo = Repo(dir)
@@ -127,10 +127,10 @@ def src_prepare(file, dir='', branch = ''):
 	except GitCommandError as ex:
 		_pretty_print('Something went wrong. Message: %s' % ex.__str__())
 
-	_pretty_print('Archive prepare finished')
+	_pretty_print('[+] Archive prepare finished')
 
 def src_upload(file, user, host, dir):
-	_pretty_print("Starting file upload.")
+	_pretty_print("[+] Starting file upload.")
 
 	env.host = host
 	env.user = user
@@ -138,10 +138,10 @@ def src_upload(file, user, host, dir):
 	env.use_ssh_config = True
 
 	put(file, "%s/%s" %(dir, file))
-	_pretty_print("File upload finished")
+	_pretty_print("[+] File upload finished")
 
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
-	_pretty_print("Starting remote extract")
+	_pretty_print("[+] Starting remote extract")
 
 	env.host = host
 	env.user = user
@@ -151,10 +151,10 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	with cd(file_dir):
 		run('tar xvf %s -C %s' % (file, dest_dir))
 
-	_pretty_print("Remote extract finished")
+	_pretty_print("[+] Remote extract finished")
 
 def	src_remote_deploy(src_dir, dst_dir, user, host):
-	_pretty_print("Starting remote deployment")
+	_pretty_print("[+] Starting remote deployment")
 
 	env.host = host
 	env.user = user
@@ -176,10 +176,10 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 				run('mv current previous')
 		run('ln -s %s current' % os.path.join(path, src_dir))
 
-	_pretty_print("Remote deployment finished")
+	_pretty_print("[+] Remote deployment finished")
 
 def	src_remote_rollback(dir, host, user):
-	_pretty_print("Starting remote rollback")
+	_pretty_print("[+] Starting remote rollback")
 
 	env.host = host
 	env.user = user
@@ -188,10 +188,10 @@ def	src_remote_rollback(dir, host, user):
 	with cd(dir):
 		run('mv current current.prerollback')
 		run('mv previous current')
-	_pretty_print("Remote rollback finished")
+	_pretty_print("[+] Remote rollback finished")
 
 def deploy():
-	_pretty_print("Starting deployment.")
+	_pretty_print("[+] Starting deployment.")
 
 	try:
 		config = _parse_config("config.ini")
@@ -202,31 +202,31 @@ def deploy():
 		src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 		src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 
-		_pretty_print("Deployment finished.")
+		_pretty_print("[+] Deployment finished.")
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def	mysql_db_dump(filename, database, dbuser, dbpassword, host, host_user):
-	_pretty_print('Starting MySQL dump.')
+	_pretty_print('[+] Starting MySQL dump.')
 	env.hosts = [host]
 	env.user = host_user
 	env.use_ssh_config = True
 
 	run('mysqldump -u%s -p%s %s > %s' %(dbuser, dbpassword, database, filename))
-	_pretty_print('MySQL dump finished.')
+	_pretty_print('[+] MySQL dump finished.')
 
 def	mysql_db_restore(filename, database, dbuser, dbpassword, host, host_user):
-	_pretty_print('Starting MySQL restore.')
+	_pretty_print('[+] Starting MySQL restore.')
 	env.hosts = [host]
 	env.user = host_user
 	env.use_ssh_config = True
 
 	run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, filename))
-	_pretty_print('MySQL restore finished.')
+	_pretty_print('[+] MySQL restore finished.')
 
 def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
-	_pretty_print('Starting MySQL clone.')
+	_pretty_print('[+] Starting MySQL clone.')
 
 	env.host = host
 	env.user = host_user
@@ -240,10 +240,10 @@ def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
 									 '\"CREATE DATABASE %s\"' % new_database))
 	mysql_db_restore('temp.sql', new_database, dbuser, dbpassword, host, host_user)
 
-	_pretty_print('MySQL clone finished.')
+	_pretty_print('[+] MySQL clone finished.')
 
 def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
-	_pretty_print('Starting MySQL migrate')
+	_pretty_print('[+] Starting MySQL migrate')
 
 	env.host = host
 	env.user = host_user
@@ -255,14 +255,14 @@ def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 			for file in list_dir():
 				run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, file))
 
-		_pretty_print('MySQL migrate finished.')
+		_pretty_print('[+] MySQL migrate finished.')
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 		raise Exception
 
 def	db_migrate():
-	_pretty_print("Starting database migration.")
+	_pretty_print("[+] Starting database migration.")
 
 	try:
 		config = _parse_config("config.ini")
@@ -270,15 +270,15 @@ def	db_migrate():
 		mysql_db_clone(config['mysql_database'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
-		_pretty_print("Database migration finished.")
+		_pretty_print("[+] Database migration finished.")
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def usage():
 	_pretty_print('Usage:')
-	_pretty_print(' - deploy() - deploys new version using config from config.ini')
-	_pretty_print(' - db_migrate() - migrate database to new version using config from config.ini')
+	_pretty_print(' - deploy - deploys new version using config from config.ini')
+	_pretty_print(' - db_migrate - migrate database to new version using config from config.ini')
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
