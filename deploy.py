@@ -1,8 +1,10 @@
+#!/usr/bin/env python
 from __future__ import print_function
 
 import os
 import sys
 from os.path import dirname, abspath
+import shutil
 import re
 from datetime import datetime
 
@@ -10,16 +12,17 @@ sys.path.append(dirname(dirname(abspath(__file__))))
 
 from fabric.context_managers import cd, prefix
 from fabric.state import env
-from fabric.api import run, put
+from fabric.api import run, put, settings
 from fabric.contrib import files
 
-from git import Repo, InvalidGitRepositoryError, GitCommandError
+from git import Repo, InvalidGitRepositoryError, GitCommandError, RemoteProgress
 
 import ConfigParser
 
 #import config
 
 env.host = 'localhost'
+progress = RemoteProgress()
 
 def _pretty_print(str):
 	print('[%s] INFO: %s' % (env.host, str))
@@ -64,39 +67,47 @@ def list_dir(dir_=None):
 	return files
 
 def src_clone(dir='', branch = '', repo = ''):
-	_pretty_print('Repository clone start')
+	_pretty_print('Repository clone start: %s' % dir)
 
 	if len(dir) == 0:
 		_pretty_print('Directory not selected, assuming current one.')
 		dir = os.getcwd()
 
+#	if not os.path.isdir(dir):
+#		_pretty_print('Directory not found, creating new one.')
+#		os.mkdir(dir)
+	if os.path.isdir(dir):
+		_pretty_print('Directory found, renaming.')
+		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 	try:
-		repo = Repo(dir)
-		_pretty_print('Repository found.')
+		#repo = Repo(dir)
+		_pretty_print('Clonning repo.')
+		repo = Repo.clone_from(repo, dir, progress)
+		_pretty_print('Repository found. Branch: %s' % repo.active_branch)
 	except InvalidGitRepositoryError: #Repo doesn't exists
-		_pretty_print('Repository not found. Creating new one, using provided git url.')
+		_pretty_print('Repository not found. Creating new one, using %s.' % repo)
 		if len(repo) == 0:
 			_pretty_print('Repository not selected. Returning.')
 			raise InvalidGitRepositoryError
-		repo = Repo.clone_from(repo, dir)
+		repo = Repo.clone_from(repo, dir, progress)
 		#repo.create_remote('origin', config.GIT_REPO)
 
-	_pretty_print('Fetching changes.')
+#	_pretty_print('Fetching changes.')
 
-	origin = repo.remotes.origin
-	origin.fetch()
-
-	if len(branch) == 0:
-		_pretty_print('Branch not supplied, assuming current one.')
-		origin.pull()
-	else:
-		_pretty_print('Pulling from \'%s\' branch' % branch)
-		origin.pull(branch)
+#	origin = repo.remotes.origin
+#	origin.fetch()
+#
+#	if len(branch) == 0:
+#		_pretty_print('Branch not supplied, assuming current one.')
+#		origin.pull()
+#	else:
+#		_pretty_print('Pulling from \'%s\' branch' % branch)
+#		origin.pull(branch)
 
 	_pretty_print('Repository clone finished')
 
 def src_prepare(file, dir='', branch = ''):
-	_pretty_print('Archive prepare start')
+	_pretty_print('Archive prepare start. Branch: %s' % branch)
 
 	try:
 		repo = Repo(dir)
@@ -106,12 +117,12 @@ def src_prepare(file, dir='', branch = ''):
 		return
 
 	try:
-		if len(branch) is not 0:
+		if len(branch)==0:
 			_pretty_print('Branch not selected. Archiving current one.')
-			repo.archive(open("%s.tar" % file,'w'))
+			repo.archive(open("%s" % file,'w'))
 		else:
 			_pretty_print('Archiving branch %s' % branch)
-			repo.archive(open("%s.tar" % file,'w'), branch)
+			repo.archive(open("%s" % file,'w'), branch)
 
 	except GitCommandError as ex:
 		_pretty_print('Something went wrong. Message: %s' % ex.__str__())
@@ -120,7 +131,12 @@ def src_prepare(file, dir='', branch = ''):
 
 def src_upload(file, user, host, dir):
 	_pretty_print("Starting file upload.")
-	put(file, '%s@%s:%s' % (user, host, dir))
+
+	env.host = "%s@%s" % (user,host)
+	env.user = user
+	env.use_ssh_config = True
+
+	put(file, "%s/%s" %(dir, file))
 	_pretty_print("File upload finished")
 
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
@@ -130,6 +146,7 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	env.user = user
 	env.use_ssh_config = True
 
+	run('mkdir -p %s' % dest_dir)
 	with cd(file_dir):
 		run('tar xvf %s -C %s' % (file, dest_dir))
 
@@ -141,11 +158,21 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 	env.hosts = [host]
 	env.user = user
 	env.use_ssh_config = True
+	path = env.cwd
+	_pretty_print("current working dir: %s" % env.cwd)
+	if not files.exists(dst_dir, verbose=True):
+		run('mkdir -p %s' % dst_dir)
 
 	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
-	run('rm previous')
-	run('mv current previous')
-	run('ln -s %s current' % src_dir)
+	with cd(dst_dir):
+		run('rm -f previous')
+		_pretty_print("current working dir: %s" % env.cwd)
+		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
+		with settings(warn_only=True):
+			if not run('test -L current').failed:
+				run('mv current previous')
+		run('ln -s %s current' % os.path.join(path, src_dir))
+
 	_pretty_print("Remote deployment finished")
 
 def	src_remote_rollback(dir, host, user):
@@ -168,7 +195,7 @@ def deploy():
 		src_clone(config['local_dir'], config['branch'], config['git_repo'])
 		src_prepare(config['file_name'], config['local_dir'], config['branch'])
 		src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
-		src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'])
+		src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 		src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 		_pretty_print("Deployment finished.")
@@ -241,7 +268,7 @@ def usage():
 	_pretty_print(' - db_migrate() - migrate database to new version using config from config.ini')
 
 if __name__ == "__main__":
-	if not len(sys.argv[1]):
+	if len(sys.argv) == 1:
 		usage()
 		sys.exit()
 
