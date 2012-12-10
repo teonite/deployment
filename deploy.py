@@ -25,7 +25,7 @@ env.host = 'localhost'
 progress = RemoteProgress()
 
 def _pretty_print(str):
-	print('[%s] INFO: %s' % (env.host, str))
+	print('[%s] INFO: %s' % (env.host_string, str))
 
 def _prefix():
 	return
@@ -61,8 +61,8 @@ def _parse_config(filename):
 
 def list_dir(dir_=None):
 	"""returns a list of files in a directory (dir_) as absolute paths"""
-	dir_ = dir_ or env.cwd
-	string_ = run("for i in %s*; do echo $i; done" % dir_)
+	#dir_ = dir_ or env.cwd
+	string_ = run("for i in *; do echo $i; done")
 	files = string_.replace("\r","").split("\n")
 	return files
 
@@ -132,8 +132,9 @@ def src_prepare(file, dir='', branch = ''):
 def src_upload(file, user, host, dir):
 	_pretty_print("Starting file upload.")
 
-	env.host = "%s@%s" % (user,host)
+	env.host = host
 	env.user = user
+	env.host_string = "%s@%s" %(user,host)
 	env.use_ssh_config = True
 
 	put(file, "%s/%s" %(dir, file))
@@ -142,9 +143,9 @@ def src_upload(file, user, host, dir):
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	_pretty_print("Starting remote extract")
 
-	env.hosts = [host]
+	env.host = host
 	env.user = user
-	env.use_ssh_config = True
+	env.host_string = "%s@%s" %(user,host)
 
 	run('mkdir -p %s' % dest_dir)
 	with cd(file_dir):
@@ -155,10 +156,12 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 def	src_remote_deploy(src_dir, dst_dir, user, host):
 	_pretty_print("Starting remote deployment")
 
-	env.hosts = [host]
+	env.host = host
 	env.user = user
-	env.use_ssh_config = True
+	env.host_string = "%s@%s" %(user,host)
+
 	path = env.cwd
+
 	_pretty_print("current working dir: %s" % env.cwd)
 	if not files.exists(dst_dir, verbose=True):
 		run('mkdir -p %s' % dst_dir)
@@ -178,9 +181,10 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 def	src_remote_rollback(dir, host, user):
 	_pretty_print("Starting remote rollback")
 
-	env.hosts = [host]
+	env.host = host
 	env.user = user
-	env.use_ssh_config = True
+	env.host_string = "%s@%s" %(user,host)
+
 	with cd(dir):
 		run('mv current current.prerollback')
 		run('mv previous current')
@@ -224,29 +228,38 @@ def	mysql_db_restore(filename, database, dbuser, dbpassword, host, host_user):
 def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
 	_pretty_print('Starting MySQL clone.')
 
-	env.hosts = [host]
+	env.host = host
 	env.user = host_user
+	env.host_string = "%s@%s" %(host_user,host)
 	env.use_ssh_config = True
 
-	new_database = '%s-%s' % (database, datetime.now().strftime("%Y%m%d"))
+	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
 	mysql_db_dump('temp.sql', database, dbuser, dbpassword, host, host_user)
-	run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database,
-									 'CREATE DATABASE %s' % new_database))
+	run('mysql -u%s -p%s %s <<< %s' % (dbuser, dbpassword, database,
+									 '\"CREATE DATABASE %s\"' % new_database))
 	mysql_db_restore('temp.sql', new_database, dbuser, dbpassword, host, host_user)
 
 	_pretty_print('MySQL clone finished.')
 
 def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 	_pretty_print('Starting MySQL migrate')
-	env.hosts = [host]
-	env.user = host_user
-	env.use_ssh_config = True
-	with(cd(dir)):
-		for file in list_dir():
-			run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, file))
 
-	_pretty_print('MySQL migrate finished.')
+	env.host = host
+	env.user = host_user
+	env.host_string = "%s@%s" %(host_user,host)
+	env.use_ssh_config = True
+
+	try:
+		with(cd(dir)):
+			for file in list_dir():
+				run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, file))
+
+		_pretty_print('MySQL migrate finished.')
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		raise Exception
 
 def	db_migrate():
 	_pretty_print("Starting database migration.")
