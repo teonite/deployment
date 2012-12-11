@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+import getopt
 
 import os
 import sys
@@ -23,6 +24,9 @@ import ConfigParser
 
 env.host = 'localhost'
 progress = RemoteProgress()
+
+class NotConfiguredError(Exception):
+	pass
 
 def _pretty_print(str):
 	print('[%s] INFO: %s' % (env.host_string, str))
@@ -73,9 +77,6 @@ def src_clone(dir='', branch = '', repo = ''):
 		_pretty_print('Directory not selected, assuming current one.')
 		dir = os.getcwd()
 
-#	if not os.path.isdir(dir):
-#		_pretty_print('Directory not found, creating new one.')
-#		os.mkdir(dir)
 	if os.path.isdir(dir):
 		_pretty_print('Directory found, renaming.')
 		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
@@ -190,11 +191,12 @@ def	src_remote_rollback(dir, host, user):
 		run('mv previous current')
 	_pretty_print("[+] Remote rollback finished")
 
-def deploy():
+def deploy(config):
 	_pretty_print("[+] Starting deployment.")
 
 	try:
-		config = _parse_config("config.ini")
+		if not config:
+			raise NotConfiguredError
 
 		src_clone(config['local_dir'], config['branch'], config['git_repo'])
 		src_prepare(config['file_name'], config['local_dir'], config['branch'])
@@ -207,25 +209,25 @@ def deploy():
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
-def	mysql_db_dump(filename, database, dbuser, dbpassword, host, host_user):
+def	mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	_pretty_print('[+] Starting MySQL dump.')
 	env.hosts = [host]
 	env.user = host_user
 	env.use_ssh_config = True
 
-	run('mysqldump -u%s -p%s %s > %s' %(dbuser, dbpassword, database, filename))
+	run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
 	_pretty_print('[+] MySQL dump finished.')
 
-def	mysql_db_restore(filename, database, dbuser, dbpassword, host, host_user):
+def	mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	_pretty_print('[+] Starting MySQL restore.')
 	env.hosts = [host]
 	env.user = host_user
 	env.use_ssh_config = True
 
-	run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, filename))
+	run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
 	_pretty_print('[+] MySQL restore finished.')
 
-def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
+def	mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user):
 	_pretty_print('[+] Starting MySQL clone.')
 
 	env.host = host
@@ -235,14 +237,14 @@ def	mysql_db_clone(database, dbuser, dbpassword, host, host_user):
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-	mysql_db_dump('temp.sql', database, dbuser, dbpassword, host, host_user)
-	run('mysql -u%s -p%s %s <<< %s' % (dbuser, dbpassword, database,
+	mysql_db_dump('temp.sql', database, dbhost, dbuser, dbpassword, host, host_user)
+	run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
 									 '\"CREATE DATABASE %s\"' % new_database))
-	mysql_db_restore('temp.sql', new_database, dbuser, dbpassword, host, host_user)
+	mysql_db_restore('temp.sql', new_database, dbhost, dbuser, dbpassword, host, host_user)
 
 	_pretty_print('[+] MySQL clone finished.')
 
-def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
+def	mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user):
 	_pretty_print('[+] Starting MySQL migrate')
 
 	env.host = host
@@ -253,7 +255,7 @@ def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 	try:
 		with(cd(dir)):
 			for file in list_dir():
-				run('mysql -u%s -p%s %s < %s' % (dbuser, dbpassword, database, file))
+				run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
 
 		_pretty_print('[+] MySQL migrate finished.')
 	except:
@@ -261,14 +263,15 @@ def	mysql_db_migrate(database, dir, dbuser, dbpassword, host, host_user):
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 		raise Exception
 
-def	db_migrate():
+def	db_migrate(config):
 	_pretty_print("[+] Starting database migration.")
 
 	try:
-		config = _parse_config("config.ini")
+		if not config:
+			raise NotConfiguredError
 
-		mysql_db_clone(config['mysql_database'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
-		mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 		_pretty_print("[+] Database migration finished.")
 	except:
@@ -276,19 +279,78 @@ def	db_migrate():
 		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def usage():
+	_pretty_print('Parameters:')
+	_pretty_print(' -c, --config <filename> - if not selected, config.ini is selected')
 	_pretty_print('Usage:')
-	_pretty_print(' - deploy - deploys new version using config from config.ini')
-	_pretty_print(' - db_migrate - migrate database to new version using config from config.ini')
+	_pretty_print(' - deploy - deploys new version')
+	_pretty_print(' - db_migrate - migrate database to new version')
+	_pretty_print(' - src_clone - clone repo to local folder')
+	_pretty_print(' - src_prepare - archive repo to file')
+	_pretty_print(' - src_upload - upload packed file to remote host')
+	_pretty_print(' - src_remote_extract - extract uploaded file')
+	_pretty_print(' - src_remote_deploy - deploys new version')
+	_pretty_print(' - mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
+	_pretty_print(' - mysql_db_migrate - runs .sql files from selected folder')
+	_pretty_print(' - mysql_db_dump - dump database to selected file')
+	_pretty_print(' - mysql_db_restore - restore database from file')
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
 		usage()
 		sys.exit()
 
-	s = sys.argv[1]
-	if s == 'deploy':
-		deploy()
-	elif s == 'db_migrate':
-		db_migrate()
-	else:
+	try:
+		opts, args = getopt.getopt(sys.argv[2:], "c:", ["config="])
+	except getopt.GetoptError as err:
+		# print help information and exit:
+		_pretty_print(str(err)) # will print something like "option -a not recognized"
 		usage()
+		sys.exit(2)
+
+	config_f = None
+	for o, a in opts:
+		if o == "-c", "--config":
+			config_f = a
+		else:
+			_pretty_print("unhandled option")
+
+	config = None
+	try:
+		if not config_f:
+			config = _parse_config("config.ini")
+		else:
+			config = _parse_config(config_f)
+
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+
+	try:
+		s = sys.argv[1]
+		if s == 'deploy':
+			deploy(config)
+		elif s == 'db_migrate':
+			db_migrate(config)
+		elif s == 'src_clone':
+			src_clone(config['local_dir'], config['branch'], config['git_repo'])
+		elif s == 'src_prepare':
+			src_prepare(config['file_name'], config['local_dir'], config['branch'])
+		elif s == 'src_upload':
+			src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
+		elif s == 'src_remote_extract':
+			src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+		elif s == 'src_remote_deploy':
+			src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
+		elif s == 'mysql_db_clone':
+			mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		elif s == 'mysql_db_migrate':
+			mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		elif s == 'mysql_db_dump':
+			mysql_db_dump(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		elif s == 'mysql_db_restore':
+			mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		else:
+			usage()
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
