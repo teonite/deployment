@@ -18,18 +18,26 @@ from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError, GitCommandError, RemoteProgress
 
+import logging
+import graypy
 import ConfigParser
 
 #import config
 
-env.host = 'localhost'
+env.host_string = 'localhost'
 progress = RemoteProgress()
+handler = graypy.GELFHandler('logs.teonite.net', 10514)
+
+logger = logging.getLogger('init')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
 
 class NotConfiguredError(Exception):
 	pass
 
 def _pretty_print(str):
-	print('[%s] INFO: %s' % (env.host_string, str))
+	logger.info('[%s] INFO: %s' % (env.host_string, str))
+	print ('[%s] INFO: %s' % (env.host_string, str))
 
 def _prefix():
 	return
@@ -165,14 +173,16 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 
 	_pretty_print("current working dir: %s" % env.cwd)
 	if not files.exists(dst_dir, verbose=True):
-		run('mkdir -p %s' % dst_dir)
+		run('mkdir -p %s-%s' % (dst_dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 
 	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
 	with cd(dst_dir):
-		run('rm -f previous')
-		_pretty_print("current working dir: %s" % env.cwd)
 		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
 		with settings(warn_only=True):
+			if not run('test -L previous').failed:
+				run('rm -f previous')
+			_pretty_print("current working dir: %s" % env.cwd)
+
 			if not run('test -L current').failed:
 				run('mv current previous')
 		run('ln -s %s current' % os.path.join(path, src_dir))
@@ -309,7 +319,7 @@ if __name__ == "__main__":
 
 	config_f = None
 	for o, a in opts:
-		if o == "-c", "--config":
+		if o == "-c" or o == "--config":
 			config_f = a
 		else:
 			_pretty_print("unhandled option")
@@ -320,6 +330,13 @@ if __name__ == "__main__":
 			config = _parse_config("config.ini")
 		else:
 			config = _parse_config(config_f)
+
+		if not config['project_name']:
+			raise Exception('Project name not set.')
+
+		logger = logging.getLogger(config['project_name'])
+		logger.setLevel(logging.DEBUG)
+		logger.addHandler(handler)
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
