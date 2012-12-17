@@ -4,14 +4,10 @@ import getopt
 
 import os
 import sys
-from os.path import dirname, abspath
 import shutil
-import re
 from datetime import datetime
 
-sys.path.append(dirname(dirname(abspath(__file__))))
-
-from fabric.context_managers import cd, prefix
+from fabric.context_managers import cd
 from fabric.state import env
 from fabric.api import run, put, settings
 from fabric.contrib import files
@@ -257,6 +253,16 @@ def src_upload(file, user, host, dir):
 	put(file, "%s/%s" %(dir, file))
 	_pretty_print("[+] File upload finished")
 
+def src_remote_test (user, host):
+	_pretty_print("[+] Starting remote test", "info")
+
+	env.host = host
+	env.user = user
+	env.host_string = "%s@%s" %(user,host)
+
+	run('exit 9')
+
+
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	_pretty_print("[+] Starting remote extract")
 
@@ -319,6 +325,7 @@ def deploy(config):
 		_validate_section(config, 'source')
 		_validate_section(config, 'deployment')
 
+		src_remote_test(config['remote_user'], config['remote_host'])
 		src_clone(config['local_dir'], config['branch'], config['git_repo'])
 		src_prepare(config['file_name'], config['local_dir'], config['branch'])
 		src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
