@@ -18,6 +18,8 @@ import logging, logging.config
 import ConfigParser
 import traceback
 
+import json
+
 _log = None
 env.host_string = 'localhost'
 progress = RemoteProgress()
@@ -170,6 +172,9 @@ def _validate_section(config, section):
 #		DEPLOY_DIR = deploy
 		_validate_entry(config, 'deploy_dir', required=True, default=None)
 
+#		CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
+		_validate_entry(config, 'config_to_copy', required=True, default=None)
+
 	else:
 		raise Exception('Invalid section provided!')
 
@@ -262,7 +267,6 @@ def src_remote_test (user, host):
 
 	run('exit 9')
 
-
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	_pretty_print("[+] Starting remote extract")
 
@@ -275,6 +279,18 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 		run('tar xvf %s -C %s' % (file, dest_dir))
 
 	_pretty_print("[+] Remote extract finished")
+
+def src_remote_config(json_string, src_dir, dst_dir, user, host):
+	_pretty_print("[+] Starting remote config copy", 'info')
+
+	env.host = host
+	env.user = user
+	env.host_string = "%s@%s" %(user,host)
+
+	filelist = json.loads(json_string)
+
+	for object in filelist:
+		run('cp -rf %s %s' % (os.path.join(dst_dir, object['src']), os.path.join(src_dir, object['dest'])))
 
 def	src_remote_deploy(src_dir, dst_dir, user, host):
 	_pretty_print("[+] Starting remote deployment")
@@ -330,6 +346,7 @@ def deploy(config):
 		src_prepare(config['file_name'], config['local_dir'], config['branch'])
 		src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
 		src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+		src_remote_config(config['config_to_copy'], config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 		src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 		_pretty_print("[+] Deployment finished.")

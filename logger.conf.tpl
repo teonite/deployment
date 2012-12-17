@@ -28,5 +28,5 @@ format=%(levelname)s %(message)s
 datefmt=
 
 [formatter_verbose]
-format=[%(asctime)s] "%(levelname)s | module %(module)s: %(message)s"
+format=[%(asctime)s] "%(message)s"
 datefmt=%d/%b/%Y %H:%M:%S
