@@ -21,7 +21,7 @@ args=(sys.stdout,)
 class=graypy.GELFHandler
 level=INFO
 formatter=verbose
-args=('logs.teonite.net', '12201')
+args=('logs.teonite.net', 12201)
 
 [formatter_simple]
 format=%(levelname)s %(message)s

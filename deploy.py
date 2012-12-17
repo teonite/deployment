@@ -95,7 +95,7 @@ def _parse_config(filename):
 	try:
 		config = ConfigParser.ConfigParser()
 		config.read(filename)
-		conf = _config_section_map(config, 'Source')
+		conf = _config_section_map(config, 'General')
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
@@ -265,7 +265,7 @@ def src_remote_test (user, host):
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
 
-	run('exit 9')
+	run('exit 0')
 
 def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	_pretty_print("[+] Starting remote extract")
@@ -274,7 +274,14 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
 
-	run('mkdir -p %s' % dest_dir)
+	date = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+	if not files.exists(dest_dir, verbose=True):
+		run('mkdir -p %s' % dest_dir)
+	else:
+		run('mv %s %s-%s' % (dest_dir, dest_dir, date))
+		run('mkdir -p %s' % dest_dir)
+
 	with cd(file_dir):
 		run('tar xvf %s -C %s' % (file, dest_dir))
 
@@ -290,7 +297,10 @@ def src_remote_config(json_string, src_dir, dst_dir, user, host):
 	filelist = json.loads(json_string)
 
 	for object in filelist:
-		run('cp -rf %s %s' % (os.path.join(dst_dir, object['src']), os.path.join(src_dir, object['dest'])))
+		if files.exists(os.path.join(dst_dir, 'current', object['src']), verbose=True):
+			run('cp -rf %s %s' % (os.path.join(dst_dir, 'current', object['src']), os.path.join(src_dir, object['dest'])))
+		else:
+			_pretty_print('File does not exists: %s, ommiting' % os.path.join(dst_dir, 'current', object['src']), 'error')
 
 def	src_remote_deploy(src_dir, dst_dir, user, host):
 	_pretty_print("[+] Starting remote deployment")
@@ -301,12 +311,16 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 
 	path = env.cwd
 
+	deploy_dir = datetime.now().strftime("%Y%m%d-%H%M%S")
 	_pretty_print("current working dir: %s" % env.cwd)
 	if not files.exists(dst_dir, verbose=True):
-		run('mkdir -p %s-%s' % (dst_dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
+		run('mkdir -p %s' % dst_dir)
 
 	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
 	with cd(dst_dir):
+		if not files.exists(deploy_dir, verbose=True):
+			run('mkdir -p %s' % deploy_dir)
+		run('cp -Rfv %s %s' % (os.path.join('..', src_dir, "*"), deploy_dir))
 		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
 		with settings(warn_only=True):
 			if not run('test -L previous').failed:
