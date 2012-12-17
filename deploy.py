@@ -286,8 +286,10 @@ def deploy(config):
 	try:
 		if not config:
 			raise NotConfiguredError
-		config = _validate_section(config, 'source')
-		config = _validate_section(config, 'deployment')
+
+		_validate_section(config, 'source')
+		_validate_section(config, 'deployment')
+
 		src_clone(config['local_dir'], config['branch'], config['git_repo'])
 		src_prepare(config['file_name'], config['local_dir'], config['branch'])
 		src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
@@ -359,6 +361,7 @@ def	db_migrate(config):
 	try:
 		if not config:
 			raise NotConfiguredError
+		_validate_section(config, 'mysql')
 
 		mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
@@ -429,22 +432,33 @@ if __name__ == "__main__":
 		elif s == 'db_migrate':
 			db_migrate(config)
 		elif s == 'src_clone':
+			_validate_section(config, 'source')
 			src_clone(config['local_dir'], config['branch'], config['git_repo'])
 		elif s == 'src_prepare':
+			_validate_section(config, 'source')
 			src_prepare(config['file_name'], config['local_dir'], config['branch'])
 		elif s == 'src_upload':
+			_validate_section(config, 'source')
+			_validate_section(config, 'deployment')
 			src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
 		elif s == 'src_remote_extract':
+			_validate_section(config, 'source')
+			_validate_section(config, 'deployment')
 			src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 		elif s == 'src_remote_deploy':
+			_validate_section(config, 'deployment')
 			src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 		elif s == 'mysql_db_clone':
+			_validate_section(config, 'mysql')
 			mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		elif s == 'mysql_db_migrate':
+			_validate_section(config, 'mysql')
 			mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		elif s == 'mysql_db_dump':
+			_validate_section(config, 'mysql')
 			mysql_db_dump(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		elif s == 'mysql_db_restore':
+			_validate_section(config, 'mysql')
 			mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 		else:
 			usage()
