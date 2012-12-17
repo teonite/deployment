@@ -18,31 +18,60 @@ from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError, GitCommandError, RemoteProgress
 
-import logging
-import graypy
+import logging, logging.config
 import ConfigParser
+import traceback
 
-#import config
-
+_log = None
 env.host_string = 'localhost'
 progress = RemoteProgress()
-handler = graypy.GELFHandler('logs.teonite.net', 10514)
 
-logger = logging.getLogger('init')
-logger.setLevel(logging.DEBUG)
-logger.addHandler(handler)
+def _setupLogging():
+	"""
+	Setup logging
+	"""
+	config_file = None
+
+	if os.path.exists('logger.conf'):
+		config_file = 'logger.conf'
+
+	if not config_file:
+		print ('FATAL: Cannot find logging configuration file')
+		sys.exit()
+
+	logging.config.fileConfig(config_file)
+	_log = logging
+
+
+def getLogger():
+	"Get configured logger"
+
+	if _log is None:
+		_setupLogging()
+
+	return logging.getLogger()
+
+log = getLogger()
+
+def logException(ex):
+	log.debug("Error while saving form..")
+	exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+	log.error("exception caught while saving form, here's the trace: '%s'",
+		repr(traceback.format_exception(exceptionType, exceptionValue, exceptionTraceback))
+	)
+#import config
 
 class NotConfiguredError(Exception):
 	pass
 
 def _pretty_print(str, level='debug'):
 	if level == 'debug':
-		logger.debug('[%s] DEBUG: %s' % (env.host_string, str))
+		log.debug('[%s] DEBUG: %s' % (env.host_string, str))
 	elif level == 'info':
-		logger.info('[%s] INFO: %s' % (env.host_string, str))
+		log.info('[%s] INFO: %s' % (env.host_string, str))
 	elif level == 'error':
-		logger.error('[%s] ERROR: %s' % (env.host_string, str))
-	print ('[%s] %s: %s' % (env.host_string, level, str))
+		log.error('[%s] ERROR: %s' % (env.host_string, str))
+	#print ('[%s] %s: %s' % (env.host_string, level, str))
 
 def _prefix():
 	return
@@ -413,13 +442,6 @@ if __name__ == "__main__":
 			config = _parse_config("config.ini")
 		else:
 			config = _parse_config(config_f)
-
-		if not config['project_name']:
-			raise Exception('Project name not set.')
-
-		logger = logging.getLogger(config['project_name'])
-		logger.setLevel(logging.DEBUG)
-		logger.addHandler(handler)
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
