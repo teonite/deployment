@@ -40,7 +40,6 @@ def _setupLogging():
 	logging.config.fileConfig(config_file)
 	_log = logging
 
-
 def getLogger():
 	"Get configured logger"
 
@@ -264,6 +263,7 @@ def src_remote_test (user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
+	env.use_ssh_config = True
 
 	run('exit 0')
 
@@ -273,6 +273,7 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
+	env.use_ssh_config = True
 
 	date = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -293,6 +294,7 @@ def src_remote_config(json_string, src_dir, dst_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
+	env.use_ssh_config = True
 
 	filelist = json.loads(json_string)
 
@@ -308,6 +310,7 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
+	env.use_ssh_config = True
 
 	path = env.cwd
 
@@ -329,7 +332,7 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 
 			if not run('test -L current').failed:
 				run('mv current previous')
-		run('ln -s %s current' % os.path.join(path, src_dir))
+		run('ln -s %s current' % deploy_dir)
 
 	_pretty_print("[+] Remote deployment finished")
 
@@ -339,11 +342,33 @@ def	src_remote_rollback(dir, host, user):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
+	env.use_ssh_config = True
 
 	with cd(dir):
 		run('mv current current.prerollback')
 		run('mv previous current')
 	_pretty_print("[+] Remote rollback finished")
+
+def deploy():
+	config_f = None
+	for o, a in opts:
+		if o == "-c" or o == "--config":
+			config_f = a
+		else:
+			_pretty_print("unhandled option")
+
+	config = None
+	try:
+		if not config_f:
+			config = _parse_config("config.ini")
+		else:
+			config = _parse_config(config_f)
+
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+
+	deploy(config)
 
 def deploy(config):
 	_pretty_print("[+] Starting deployment.")
