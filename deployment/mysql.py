@@ -41,7 +41,7 @@ def mysql_db_restore(config_f = 'config.ini'):
 	config_validate_section(config, 'mysql')
 	_mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
-def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user):
+def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpfile='temp.sql'):
 	pretty_print('[+] Starting MySQL clone.', 'info')
 
 	env.host = host
@@ -51,10 +51,10 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user):
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-	_mysql_db_dump('temp.sql', database, dbhost, dbuser, dbpassword, host, host_user)
+	_mysql_db_dump(dumpfile, database, dbhost, dbuser, dbpassword, host, host_user)
 	run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
 											'\"CREATE DATABASE %s\"' % new_database))
-	_mysql_db_restore('temp.sql', new_database, dbhost, dbuser, dbpassword, host, host_user)
+	_mysql_db_restore(dumpfile, new_database, dbhost, dbuser, dbpassword, host, host_user)
 
 	pretty_print('[+] MySQL clone finished.', 'info')
 
@@ -62,7 +62,7 @@ def mysql_db_clone(config_f = 'config.ini'):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'mysql')
-	_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+	_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 
 def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user):
 	pretty_print('[+] Starting MySQL migrate', 'info')
