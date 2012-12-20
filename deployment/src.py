@@ -182,7 +182,7 @@ def src_remote_config(config_f = 'config.ini'):
 	_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 
 def	_src_remote_deploy(src_dir, dst_dir, user, host):
-	pretty_print("[+] Starting remote deployment")
+	pretty_print("[+] Starting remote deployment", 'info')
 
 	env.host = host
 	env.user = user
@@ -211,7 +211,7 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 				run('mv current previous')
 		run('ln -s %s current' % deploy_dir)
 
-	pretty_print("[+] Remote deployment finished")
+	pretty_print("[+] Remote deployment finished", 'info')
 
 def src_remote_deploy(config_f = 'config.ini'):
 	config = prepare_config(config_f)
