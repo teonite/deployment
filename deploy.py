@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
+import __main__ as main
+
 import getopt
 
 import sys
@@ -11,23 +13,31 @@ from deployment.src import *
 env.host_string = 'localhost'
 
 def usage():
-	pretty_print('Parameters:')
-	pretty_print(' -c, --config <filename> - if not selected, config.ini is selected')
-	pretty_print('Usage:')
-	pretty_print(' - deploy - deploys new version')
-	pretty_print(' - db_migrate - migrate database to new version')
-	pretty_print(' - src_clone - clone repo to local folder')
-	pretty_print(' - src_prepare - archive repo to file')
-	pretty_print(' - src_upload - upload packed file to remote host')
-	pretty_print(' - src_remote_test - test remote host')
-	pretty_print(' - src_remote_extract - extract uploaded file')
-	pretty_print(' - src_remote_config - copy config from current to extract_dir')
-	pretty_print(' - src_remote_deploy - deploys new version')
-	pretty_print(' - src_remote_rollback - backs to previous version')
-	pretty_print(' - mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
-	pretty_print(' - mysql_db_migrate - runs .sql files from selected folder')
-	pretty_print(' - mysql_db_dump - dump database to selected file')
-	pretty_print(' - mysql_db_restore - restore database from file')
+	print(' ')
+	print('				TEONITE deployment script')
+	print('				  Copyright 2012 TEONITE')
+	print(' ')
+	print('Usage:')
+	print('	python %s <command> <parameter>' % os.path.basename(main.__file__))
+	print(' ')
+	print('Commands:')
+	print('	- deploy - deploys new version')
+	print('	- db_migrate <migration_folder> - migrate database to new version')
+	print('	- src_clone - clone repo to local folder')
+	print('	- src_prepare - archive repo to file')
+	print('	- src_upload - upload packed file to remote host')
+	print('	- src_remote_test - test remote host')
+	print('	- src_remote_extract - extract uploaded file')
+	print('	- src_remote_config - copy config from current to extract_dir')
+	print('	- src_remote_deploy - deploys new version')
+	print('	- src_remote_rollback - backs to previous version')
+	print('	- mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
+	print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
+	print('	- mysql_db_dump - dump database to selected file')
+	print('	- mysql_db_restore - restore database from file')
+	print(' ')
+	print('Parameters: (optional)')
+	print('	-c, --config <filename> - if not selected, config.ini is selected')
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
