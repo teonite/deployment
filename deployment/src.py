@@ -10,7 +10,7 @@ from fabric.state import env
 from fabric.api import run, put, settings
 from fabric.contrib import files
 
-from git import Repo, InvalidGitRepositoryError, GitCommandError, RemoteProgress
+from git import Repo, InvalidGitRepositoryError, RemoteProgress
 import json
 
 from misc import *
@@ -18,24 +18,24 @@ from misc import *
 progress = RemoteProgress()
 
 def _src_clone(dir='', branch = '', repo = ''):
-	pretty_print('[+] Repository clone start: %s' % dir)
+	pretty_print('[+] Repository clone start: %s' % dir, 'info')
 
 	if len(dir) == 0:
-		pretty_print('Directory not selected, assuming current one.')
+		pretty_print('Directory not selected, assuming current one.', 'info')
 		dir = os.getcwd()
 
 	if os.path.isdir(dir):
-		pretty_print('Directory found, renaming.')
+		pretty_print('Directory found, renaming.', 'info')
 		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 	try:
 		#repo = Repo(dir)
-		pretty_print('Clonning repo.')
+		pretty_print('Clonning repo.', 'info')
 		repo = Repo.clone_from(repo, dir, progress)
-		pretty_print('Repository found. Branch: %s' % repo.active_branch)
+		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 	except InvalidGitRepositoryError: #Repo doesn't exists
-		pretty_print('Repository not found. Creating new one, using %s.' % repo)
+		pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
 		if len(repo) == 0:
-			pretty_print('Repository not selected. Returning.')
+			pretty_print('Repository not selected. Returning.', 'info')
 			raise InvalidGitRepositoryError
 		repo = Repo.clone_from(repo, dir, progress)
 	#repo.create_remote('origin', config.GIT_REPO)
@@ -52,7 +52,7 @@ def _src_clone(dir='', branch = '', repo = ''):
 	#		_pretty_print('Pulling from \'%s\' branch' % branch)
 	#		origin.pull(branch)
 
-	pretty_print('[+] Repository clone finished')
+	pretty_print('[+] Repository clone finished', 'info')
 
 def src_clone(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -61,27 +61,26 @@ def src_clone(config_f = 'config.ini'):
 	_src_clone(config['local_dir'], config['branch'], config['git_repo'])
 
 def _src_prepare(file, dir='', branch = ''):
-	pretty_print('[+] Archive prepare start. Branch: %s' % branch)
+	pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
 	try:
 		repo = Repo(dir)
-		pretty_print('Repository found.')
+		pretty_print('Repository found.', 'info')
 	except InvalidGitRepositoryError: #Repo doesn't exists
-		pretty_print('Repository not found. Please provide correct one.')
-		return
+		raise Exception('Repository not found. Please provide correct one.')
 
-	try:
-		if len(branch)==0:
-			pretty_print('Branch not selected. Archiving current one.')
-			repo.archive(open("%s" % file,'w'))
-		else:
-			pretty_print('Archiving branch %s' % branch)
-			repo.archive(open("%s" % file,'w'), branch)
 
-	except GitCommandError as ex:
-		pretty_print('Something went wrong. Message: %s' % ex.__str__())
+	if len(branch)==0:
+		pretty_print('Branch not selected. Archiving current one.', 'info')
+		repo.archive(open("%s" % file,'w'))
+	else:
+		pretty_print('Archiving branch %s' % branch, 'info')
+		repo.archive(open("%s" % file,'w'), branch)
 
-	pretty_print('[+] Archive prepare finished')
+#	except GitCommandError as ex:
+#		pretty_print('Something went wrong. Message: %s' % ex.__str__())
+
+	pretty_print('[+] Archive prepare finished', 'info')
 
 def src_prepare(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -90,7 +89,7 @@ def src_prepare(config_f = 'config.ini'):
 	_src_prepare(config['file_name'], config['local_dir'], config['branch'])
 
 def _src_upload(file, user, host, dir):
-	pretty_print("[+] Starting file upload.")
+	pretty_print("[+] Starting file upload.", 'info')
 
 	env.host = host
 	env.user = user
@@ -98,7 +97,7 @@ def _src_upload(file, user, host, dir):
 	env.use_ssh_config = True
 
 	put(file, "%s/%s" %(dir, file))
-	pretty_print("[+] File upload finished")
+	pretty_print("[+] File upload finished", 'info')
 
 def src_upload(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -116,6 +115,7 @@ def _src_remote_test (user, host):
 	#	env.use_ssh_config = True
 
 	run('exit 0')
+	pretty_print('[+] Remote test finished', 'info')
 
 def src_remote_test(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -124,7 +124,7 @@ def src_remote_test(config_f = 'config.ini'):
 	_src_remote_test(config['remote_user'], config['remote_host'])
 
 def	_src_remote_extract(file, file_dir, dest_dir, user, host):
-	pretty_print("[+] Starting remote extract")
+	pretty_print("[+] Starting remote extract", 'info')
 
 	env.host = host
 	env.user = user
@@ -134,15 +134,18 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	date = datetime.now().strftime("%Y%m%d-%H%M%S")
 
 	if not files.exists(dest_dir, verbose=True):
+		pretty_print('Directory %s does not exists, creating' % dest_dir, 'info')
 		run('mkdir -p %s' % dest_dir)
 	else:
+		pretty_print('Directory %s exists, renaming to %s-%s' % (dest_dir, dest_dir, date), 'info')
 		run('mv %s %s-%s' % (dest_dir, dest_dir, date))
 		run('mkdir -p %s' % dest_dir)
 
 	with cd(file_dir):
+		pretty_print('Extracting files', 'info')
 		run('tar xvf %s -C %s' % (file, dest_dir))
 
-	pretty_print("[+] Remote extract finished")
+	pretty_print("[+] Remote extract finished", 'info')
 
 def src_remote_extract(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -218,7 +221,7 @@ def src_remote_deploy(config_f = 'config.ini'):
 	_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 
 def	_src_remote_rollback(dir, host, user):
-	pretty_print("[+] Starting remote rollback")
+	pretty_print("[+] Starting remote rollback", 'info')
 
 	env.host = host
 	env.user = user
@@ -232,7 +235,7 @@ def	_src_remote_rollback(dir, host, user):
 				return
 		run('mv current current.prerollback')
 		run('mv previous current')
-	pretty_print("[+] Remote rollback finished")
+	pretty_print("[+] Remote rollback finished", 'info')
 
 def src_remote_rollback(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -241,7 +244,7 @@ def src_remote_rollback(config_f = 'config.ini'):
 	_src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
 
 def _deploy(config):
-	pretty_print("[+] Starting deployment.")
+	pretty_print("[+] Starting deployment.", 'info')
 
 	try:
 		if not config:
@@ -258,10 +261,10 @@ def _deploy(config):
 		_src_remote_config(config['config_to_copy'], config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 		_src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 
-		pretty_print("[+] Deployment finished.")
+		pretty_print("[+] Deployment finished.", 'info')
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 
 def deploy(config_f = 'config.ini'):
 	config = prepare_config(config_f)
