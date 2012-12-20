@@ -4,6 +4,7 @@ import sys
 from datetime import datetime
 
 from fabric.context_managers import cd
+from fabric.operations import put
 from fabric.state import env
 from fabric.api import run
 
@@ -73,9 +74,19 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 	#	env.use_ssh_config = True
 
 	try:
-		with(cd(dir)):
-			for file in list_dir():
-				run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
+#		pretty_print("Current working directory: %s" % os.getcwd())
+		f = []
+		for (dirpath, dirname, filenames) in os.walk(dir):
+			f.extend(filenames)
+			break
+		f.sort()
+		pretty_print('Files: %s' % f)
+		os.chdir(dir)
+		for file in f:
+			pretty_print('Migrating file %s' % file, 'info')
+			put(file)
+			run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
+			run('rm %s' % file)
 
 		pretty_print('[+] MySQL migrate finished.', 'info')
 	except:
@@ -83,13 +94,15 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 		raise Exception
 
-def mysql_db_migrate(config_f = 'config.ini'):
+def mysql_db_migrate(migration_dir = None, config_f = 'config.ini'):
 	config = prepare_config(config_f)
+	if not migration_dir:
+		raise NotConfiguredError('Migration dir not set.')
 
 	config_validate_section(config, 'mysql')
-	_mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+	_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
-def	_db_migrate(config):
+def	_db_migrate(config, migration_dir=None):
 	pretty_print("[+] Starting database migration.", 'info')
 
 	try:
@@ -98,13 +111,17 @@ def	_db_migrate(config):
 		config_validate_section(config, 'mysql')
 
 		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
-		_mysql_db_migrate(config['mysql_database'], config['mysql_migration_dir'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		if migration_dir:
+			pretty_print("Migration directory provided. Running.", 'info')
+			_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		else:
+			pretty_print("No migration directory, omitting.", "info")
 
 		pretty_print("[+] Database migration finished.", 'info')
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
-def db_migrate(config_f = 'config.ini'):
+def db_migrate(config_f = 'config.ini', migration_dir = None):
 	config = prepare_config(config_f)
-	_db_migrate(config)
+	_db_migrate(config, migration_dir)

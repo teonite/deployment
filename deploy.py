@@ -64,7 +64,10 @@ if __name__ == "__main__":
 		if s == 'deploy':
 			deploy(config_f)
 		elif s == 'db_migrate':
-			db_migrate(config_f)
+			if len(sys.argv) == 2:
+				db_migrate(config_f, None)
+			else:
+				db_migrate(config_f, sys.argv[2])
 		elif s == 'src_clone':
 			src_clone(config_f)
 		elif s == 'src_prepare':
@@ -84,7 +87,9 @@ if __name__ == "__main__":
 		elif s == 'mysql_db_clone':
 			mysql_db_clone(config_f)
 		elif s == 'mysql_db_migrate':
-			mysql_db_migrate(config_f)
+			if len(sys.argv) == 2:
+				raise Exception('Migration dir not provided, returning.')
+			mysql_db_migrate(sys.argv[2], config_f)
 		elif s == 'mysql_db_dump':
 			mysql_db_dump(config_f)
 		elif s == 'mysql_db_restore':

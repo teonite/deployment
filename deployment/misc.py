@@ -131,7 +131,7 @@ def config_validate_section(config, section):
 		#	MYSQL_DATABASE = base
 		_validate_entry(config, 'mysql_database', required=True, default=None)
 		#	MYSQL_MIGRATION_DIR = test
-		_validate_entry(config, 'mysql_migration_dir', required=True, default=None)
+#		_validate_entry(config, 'mysql_migration_dir', required=True, default=None)
 
 	elif section == 'source':
 	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
