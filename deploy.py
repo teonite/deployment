@@ -263,7 +263,7 @@ def src_remote_test (user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	run('exit 0')
 
@@ -273,7 +273,7 @@ def	src_remote_extract(file, file_dir, dest_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	date = datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -294,7 +294,7 @@ def src_remote_config(json_string, src_dir, dst_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	filelist = json.loads(json_string)
 
@@ -310,7 +310,7 @@ def	src_remote_deploy(src_dir, dst_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	path = env.cwd
 
@@ -342,9 +342,13 @@ def	src_remote_rollback(dir, host, user):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	with cd(dir):
+		with settings(warn_only=True):
+			if run('test -L previous').failed:
+				_pretty_print('Theres nothing to rollback. Returning.', 'info')
+				return
 		run('mv current current.prerollback')
 		run('mv previous current')
 	_pretty_print("[+] Remote rollback finished")
@@ -397,7 +401,7 @@ def	mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_use
 	_pretty_print('[+] Starting MySQL dump.')
 	env.hosts = [host]
 	env.user = host_user
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
 	_pretty_print('[+] MySQL dump finished.')
@@ -406,7 +410,7 @@ def	mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_
 	_pretty_print('[+] Starting MySQL restore.')
 	env.hosts = [host]
 	env.user = host_user
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
 	_pretty_print('[+] MySQL restore finished.')
@@ -417,7 +421,7 @@ def	mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user):
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
@@ -434,7 +438,7 @@ def	mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user)
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	try:
 		with(cd(dir)):
@@ -474,6 +478,7 @@ def usage():
 	_pretty_print(' - src_upload - upload packed file to remote host')
 	_pretty_print(' - src_remote_extract - extract uploaded file')
 	_pretty_print(' - src_remote_deploy - deploys new version')
+	_pretty_print(' - src_remote_rollback - backs to previous version')
 	_pretty_print(' - mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
 	_pretty_print(' - mysql_db_migrate - runs .sql files from selected folder')
 	_pretty_print(' - mysql_db_dump - dump database to selected file')
@@ -530,9 +535,9 @@ if __name__ == "__main__":
 			_validate_section(config, 'source')
 			_validate_section(config, 'deployment')
 			src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
-		elif s == 'src_remote_deploy':
+		elif s == 'src_remote_rollback':
 			_validate_section(config, 'deployment')
-			src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
+			src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
 		elif s == 'mysql_db_clone':
 			_validate_section(config, 'mysql')
 			mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
