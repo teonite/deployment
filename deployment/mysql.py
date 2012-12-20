@@ -1,3 +1,10 @@
+#
+# Deployment and database migration tool
+#
+# Copyright (C) 2012 TEONITE
+# Copyright (C) 2012 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
+#
+
 from __future__ import print_function
 
 import sys
@@ -16,7 +23,6 @@ def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_us
 	env.hosts = [host]
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	#	env.use_ssh_config = True
 
 	run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL dump finished.', 'info')
@@ -31,7 +37,7 @@ def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host
 	env.hosts = [host]
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	#	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL restore finished.', 'info')
@@ -48,7 +54,7 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpf
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	#	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
@@ -71,7 +77,7 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-	#	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
 	try:
 #		pretty_print("Current working directory: %s" % os.getcwd())

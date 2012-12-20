@@ -1,3 +1,10 @@
+#
+# Deployment and database migration tool
+#
+# Copyright (C) 2012 TEONITE
+# Copyright (C) 2012 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
+#
+
 from __future__ import print_function
 
 import os
@@ -94,8 +101,9 @@ def _src_upload(file, user, host, dir):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	env.use_ssh_config = True
+#	env.use_ssh_config = True
 
+	pretty_print('CWD: %s' % os.getcwd())
 	put(file, "%s/%s" %(dir, file))
 	pretty_print("[+] File upload finished", 'info')
 
