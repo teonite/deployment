@@ -401,6 +401,7 @@ def	mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_use
 	_pretty_print('[+] Starting MySQL dump.')
 	env.hosts = [host]
 	env.user = host_user
+	env.host_string = "%s@%s" %(host_user,host)
 #	env.use_ssh_config = True
 
 	run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
@@ -410,6 +411,7 @@ def	mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_
 	_pretty_print('[+] Starting MySQL restore.')
 	env.hosts = [host]
 	env.user = host_user
+	env.host_string = "%s@%s" %(host_user,host)
 #	env.use_ssh_config = True
 
 	run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
