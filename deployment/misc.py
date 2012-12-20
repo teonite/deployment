@@ -168,6 +168,8 @@ def config_validate_section(config, section):
 		#		CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
 		_validate_entry(config, 'config_to_copy', required=True, default=None)
 
+		# UPLOAD_CLEAN = False
+		_validate_entry(config, 'upload_clean', required=False, default='False')
 	else:
 		raise Exception('Invalid section provided!')
 

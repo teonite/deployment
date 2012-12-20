@@ -30,9 +30,9 @@ def usage():
 	print('Commands:')
 	print('	- deploy - deploys new version')
 	print('	- db_migrate <migration_folder> - migrate database to new version')
-	print('	- src_clone - clone repo to local folder')
-	print('	- src_prepare - archive repo to file')
-	print('	- src_upload - upload packed file to remote host')
+	print('	- src_clone <subfolder> - clone repo to subfolder in local folder (selected in config.ini). Default - current date')
+	print('	- src_prepare <subfolder> - archive repo from subfolder in local folder (selected in config.ini) to file')
+	print('	- src_upload - upload packed file from local folder to remote host')
 	print('	- src_remote_test - test remote host')
 	print('	- src_remote_extract - extract uploaded file')
 	print('	- src_remote_config - copy config from current to extract_dir')
@@ -63,6 +63,7 @@ if __name__ == "__main__":
 	for o, a in opts:
 		if o == "-c" or o == "--config":
 			config_f = a
+			sys.argv.pop(2)
 		else:
 			pretty_print("unhandled option")
 
@@ -76,9 +77,15 @@ if __name__ == "__main__":
 			else:
 				db_migrate(config_f, sys.argv[2])
 		elif s == 'src_clone':
-			src_clone(config_f)
+			if len(sys.argv) == 2:
+				src_clone(config_f)
+			else:
+				src_clone(config_f, sys.argv[2])
 		elif s == 'src_prepare':
-			src_prepare(config_f)
+			if len(sys.argv) == 2:
+				src_prepare(config_f)
+			else:
+				src_prepare(config_f, sys.argv[2])
 		elif s == 'src_upload':
 			src_upload(config_f)
 		elif s == 'src_remote_test':

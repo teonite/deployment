@@ -10,6 +10,7 @@ from __future__ import print_function
 import os
 import sys
 import shutil
+import re
 from datetime import datetime
 
 from fabric.context_managers import cd
@@ -24,7 +25,7 @@ from misc import *
 
 progress = RemoteProgress()
 
-def _src_clone(dir='', branch = '', repo = ''):
+def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
 	pretty_print('[+] Repository clone start: %s' % dir, 'info')
 
 	if len(dir) == 0:
@@ -32,19 +33,28 @@ def _src_clone(dir='', branch = '', repo = ''):
 		dir = os.getcwd()
 
 	if os.path.isdir(dir):
-		pretty_print('Directory found, renaming.', 'info')
-		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
+		pretty_print('Directory found.', 'info')
+#		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
+	else:
+		pretty_print('Directory not found, creating.', 'info')
+		os.mkdir(dir)
+
+	old_dir = os.getcwd()
+	os.chdir(dir)
+
 	try:
 		#repo = Repo(dir)
 		pretty_print('Clonning repo.', 'info')
-		repo = Repo.clone_from(repo, dir, progress)
+		repo = Repo.clone_from(repo, date, progress)
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
 		if len(repo) == 0:
 			pretty_print('Repository not selected. Returning.', 'info')
 			raise InvalidGitRepositoryError
-		repo = Repo.clone_from(repo, dir, progress)
+		repo = Repo.clone_from(repo, date, progress)
+
+	os.chdir(old_dir)
 	#repo.create_remote('origin', config.GIT_REPO)
 
 	#	_pretty_print('Fetching changes.')
@@ -61,17 +71,20 @@ def _src_clone(dir='', branch = '', repo = ''):
 
 	pretty_print('[+] Repository clone finished', 'info')
 
-def src_clone(config_f = 'config.ini'):
+def src_clone(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'source')
-	_src_clone(config['local_dir'], config['branch'], config['git_repo'])
+	_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
 
-def _src_prepare(file, dir='', branch = ''):
+def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
+	old_dir = os.getcwd()
+	os.chdir(dir)
+
 	try:
-		repo = Repo(dir)
+		repo = Repo(date)
 		pretty_print('Repository found.', 'info')
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		raise Exception('Repository not found. Please provide correct one.')
@@ -86,14 +99,14 @@ def _src_prepare(file, dir='', branch = ''):
 
 #	except GitCommandError as ex:
 #		pretty_print('Something went wrong. Message: %s' % ex.__str__())
-
+	os.chdir(old_dir)
 	pretty_print('[+] Archive prepare finished', 'info')
 
-def src_prepare(config_f = 'config.ini'):
+def src_prepare(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'source')
-	_src_prepare(config['file_name'], config['local_dir'], config['branch'])
+	_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
 
 def _src_upload(file, user, host, dir):
 	pretty_print("[+] Starting file upload.", 'info')
@@ -104,7 +117,7 @@ def _src_upload(file, user, host, dir):
 #	env.use_ssh_config = True
 
 	pretty_print('CWD: %s' % os.getcwd())
-	put(file, "%s/%s" %(dir, file))
+	put(file, "%s/%s" %(dir, os.path.basename(file)))
 	pretty_print("[+] File upload finished", 'info')
 
 def src_upload(config_f = 'config.ini'):
@@ -112,7 +125,29 @@ def src_upload(config_f = 'config.ini'):
 
 	config_validate_section(config, 'source')
 	config_validate_section(config, 'deployment')
-	_src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
+	_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
+
+def _src_clean(dir, file, to_delete):
+	pretty_print('[+] Starting src_clean.', 'info')
+	old_dir = os.getcwd()
+	os.chdir(dir)
+
+	if os.path.isfile(file):
+		pretty_print('File %s found, deleting' % file, 'info')
+		os.remove(file)
+
+#	regexp = re.compile(r'[0-9]{8}_[0-9]{6}$')
+#	f = []
+#	for (dirpath, dirnames, filenames) in os.walk(dir):
+#		f.extend(regexp.match(dirnames))
+#		break
+#	for dir in f:
+	if os.path.isdir(to_delete):
+		pretty_print('Directory %s found, deleting.' % to_delete)
+		shutil.rmtree(to_delete)
+
+	os.chdir(old_dir)
+	pretty_print('[+] Finished src_clean.', 'info')
 
 def _src_remote_test (user, host):
 	pretty_print("[+] Starting remote test", "info")
@@ -256,19 +291,26 @@ def _deploy(config):
 
 	try:
 		if not config:
-			raise NotConfiguredError
+			raise NotConfiguredError('Deploy - config not provided')
+
+		date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 		config_validate_section(config, 'source')
 		config_validate_section(config, 'deployment')
 
 		_src_remote_test(config['remote_user'], config['remote_host'])
-		_src_clone(config['local_dir'], config['branch'], config['git_repo'])
-		_src_prepare(config['file_name'], config['local_dir'], config['branch'])
-		_src_upload(config['file_name'], config['remote_user'], config['remote_host'], config['upload_dir'])
+		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
+		_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
+		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 		_src_remote_config(config['config_to_copy'], config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 		_src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
 
+		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower)
+		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
+			_src_clean(config['local_dir'], config['file_name'], date)
+		else:
+			pretty_print('Cleaning not selected, omitting.', 'info')
 		pretty_print("[+] Deployment finished.", 'info')
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
