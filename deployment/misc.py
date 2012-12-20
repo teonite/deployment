@@ -49,7 +49,7 @@ def logException(ex):
 class NotConfiguredError(Exception):
 	pass
 
-def _pretty_print(str, level='debug'):
+def pretty_print(str, level='debug'):
 	if level == 'debug':
 		log.debug('[%s] DEBUG: %s' % (env.host_string, str))
 	elif level == 'info':
@@ -63,22 +63,22 @@ def _prefix():
 #return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
 
 def _config_section_map(Config, section):
-	_pretty_print('Reading section %s' % section)
+	pretty_print('Reading section %s' % section)
 	dict1 = {}
 	options = Config.options(section)
 	for option in options:
 		try:
 			dict1[option] = Config.get(section, option)
 			if dict1[option] == -1:
-				_pretty_print("skip: %s" % option)
+				pretty_print("skip: %s" % option)
 		except:
-			_pretty_print("exception on %s!" % option)
+			pretty_print("exception on %s!" % option)
 			dict1[option] = None
-	_pretty_print('Reading finished. Returning.')
+	pretty_print('Reading finished. Returning.')
 	return dict1
 
 def _parse_config(filename):
-	_pretty_print("Parsing config file: %s" % filename, 'info')
+	pretty_print("Parsing config file: %s" % filename, 'info')
 	try:
 		config = ConfigParser.ConfigParser()
 		config.read(filename)
@@ -86,7 +86,7 @@ def _parse_config(filename):
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		_pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
 		conf = {}
 
 	return conf
@@ -97,23 +97,23 @@ def _validate_entry(config, entry, required=True, default=None):
 			if not required:
 				if not default:
 					raise Exception('Default must be set if required == False')
-				_pretty_print('%s not set, assuming %s' % (entry, default), 'info')
+				pretty_print('%s not set, assuming %s' % (entry, default), 'info')
 				config[entry] = default
 			else:
 				raise NotConfiguredError('%s not set.' % entry)
 		else:
-			_pretty_print('%s provided: %s' % (entry, config[entry]), 'debug')
+			pretty_print('%s provided: %s' % (entry, config[entry]), 'debug')
 
 	except:
 		if not required:
-			_pretty_print('%s not set, assuming %s' % (entry, default), 'info')
+			pretty_print('%s not set, assuming %s' % (entry, default), 'info')
 			config[entry] = default
 		else:
-			_pretty_print('%s not set. Please use correct one.' % entry, 'error')
+			pretty_print('%s not set. Please use correct one.' % entry, 'error')
 			raise NotConfiguredError('%s not set.' % entry)
 
-def _validate_section(config, section):
-	_pretty_print("Validating config section: %s" % section, 'info')
+def config_validate_section(config, section):
+	pretty_print("Validating config section: %s" % section, 'info')
 	if section == 'mysql':
 	#	MYSQL_DUMPFILE = temp.sql
 		_validate_entry(config, 'mysql_dumpfile', required=False, default='dump.sql')
@@ -174,7 +174,7 @@ def list_dir(dir_=None):
 	files = string_.replace("\r","").split("\n")
 	return files
 
-def _prepare_config(config_f = None):
+def prepare_config(config_f = None):
 	config = None
 	try:
 		if not config_f:
@@ -184,5 +184,5 @@ def _prepare_config(config_f = None):
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 	return config

@@ -11,23 +11,23 @@ from deployment.src import *
 env.host_string = 'localhost'
 
 def usage():
-	_pretty_print('Parameters:')
-	_pretty_print(' -c, --config <filename> - if not selected, config.ini is selected')
-	_pretty_print('Usage:')
-	_pretty_print(' - deploy - deploys new version')
-	_pretty_print(' - db_migrate - migrate database to new version')
-	_pretty_print(' - src_clone - clone repo to local folder')
-	_pretty_print(' - src_prepare - archive repo to file')
-	_pretty_print(' - src_upload - upload packed file to remote host')
-	_pretty_print(' - src_remote_test - test remote host')
-	_pretty_print(' - src_remote_extract - extract uploaded file')
-	_pretty_print(' - src_remote_config - copy config from current to extract_dir')
-	_pretty_print(' - src_remote_deploy - deploys new version')
-	_pretty_print(' - src_remote_rollback - backs to previous version')
-	_pretty_print(' - mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
-	_pretty_print(' - mysql_db_migrate - runs .sql files from selected folder')
-	_pretty_print(' - mysql_db_dump - dump database to selected file')
-	_pretty_print(' - mysql_db_restore - restore database from file')
+	pretty_print('Parameters:')
+	pretty_print(' -c, --config <filename> - if not selected, config.ini is selected')
+	pretty_print('Usage:')
+	pretty_print(' - deploy - deploys new version')
+	pretty_print(' - db_migrate - migrate database to new version')
+	pretty_print(' - src_clone - clone repo to local folder')
+	pretty_print(' - src_prepare - archive repo to file')
+	pretty_print(' - src_upload - upload packed file to remote host')
+	pretty_print(' - src_remote_test - test remote host')
+	pretty_print(' - src_remote_extract - extract uploaded file')
+	pretty_print(' - src_remote_config - copy config from current to extract_dir')
+	pretty_print(' - src_remote_deploy - deploys new version')
+	pretty_print(' - src_remote_rollback - backs to previous version')
+	pretty_print(' - mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
+	pretty_print(' - mysql_db_migrate - runs .sql files from selected folder')
+	pretty_print(' - mysql_db_dump - dump database to selected file')
+	pretty_print(' - mysql_db_restore - restore database from file')
 
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 		opts, args = getopt.getopt(sys.argv[2:], "c:", ["config="])
 	except getopt.GetoptError as err:
 		# print help information and exit:
-		_pretty_print(str(err)) # will print something like "option -a not recognized"
+		pretty_print(str(err)) # will print something like "option -a not recognized"
 		usage()
 		sys.exit(2)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 		if o == "-c" or o == "--config":
 			config_f = a
 		else:
-			_pretty_print("unhandled option")
+			pretty_print("unhandled option")
 
 	try:
 		s = sys.argv[1]
@@ -83,4 +83,4 @@ if __name__ == "__main__":
 			usage()
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		_pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
