@@ -106,15 +106,5 @@ def	_db_migrate(config):
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def db_migrate(config_f = 'config.ini'):
-	config = None
-	try:
-		if not config_f:
-			config = _parse_config("config.ini")
-		else:
-			config = _parse_config(config_f)
-
-	except:
-		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
-
+	config = prepare_config(config_f)
 	_db_migrate(config)
