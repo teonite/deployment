@@ -146,9 +146,10 @@ def config_validate_section(config, section):
 		_validate_entry(config, 'branch', required=True, default=None)
 		#		LOCAL_DIR = test
 		_validate_entry(config, 'local_dir', required=False, default=os.getcwd())
+		config['local_dir'] = os.path.expanduser(config['local_dir'])
 		#		FILE_NAME = src.tar
 		_validate_entry(config, 'file_name', required=False, default='src.tar')
-
+		config['file_name'] = os.path.expanduser(config['file_name'])
 	elif section == 'deployment':
 	#		UPLOAD_DIR = ~
 		_validate_entry(config, 'upload_dir', required=False, default='')

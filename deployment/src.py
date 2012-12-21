@@ -37,8 +37,11 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 		pretty_print('Directory found.', 'info')
 #		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 	else:
-		pretty_print('Directory not found, creating.', 'info')
-		os.mkdir(dir)
+		try:
+			pretty_print('Directory not found, creating.', 'info')
+			os.mkdir(dir)
+		except:
+			raise Exception('Cannot create directory %s, please create the folder manually' % dir)
 
 	old_dir = os.getcwd()
 	os.chdir(dir)
