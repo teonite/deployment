@@ -26,6 +26,7 @@ from misc import *
 #progress = RemoteProgress()
 
 def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
+	env.host_string = 'localhost'
 	pretty_print('[+] Repository clone start: %s' % dir, 'info')
 
 	if len(dir) == 0:
@@ -78,6 +79,7 @@ def src_clone(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_%H
 	_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
 
 def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+	env.host_string = 'localhost'
 	pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
 	old_dir = os.getcwd()
@@ -109,12 +111,11 @@ def src_prepare(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_
 	_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
 
 def _src_upload(file, user, host, dir):
-	pretty_print("[+] Starting file upload.", 'info')
-
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
 #	env.use_ssh_config = True
+	pretty_print("[+] Starting file upload.", 'info')
 
 	pretty_print('CWD: %s' % os.getcwd())
 	put(file, "%s/%s" %(dir, os.path.basename(file)))

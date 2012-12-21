@@ -1,5 +1,5 @@
 [loggers]
-keys=root
+keys=root,deployment
 
 [handlers]
 keys=console,graypy
@@ -8,8 +8,13 @@ keys=console,graypy
 keys=simple,verbose
 
 [logger_root]
-level=DEBUG
+level=ERROR
 handlers=console,graypy
+
+[logger_deployment]
+level=INFO
+handlers=console,graypy
+qualname=deployment
 
 [handler_console]
 class=StreamHandler

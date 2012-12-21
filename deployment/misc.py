@@ -40,7 +40,7 @@ def getLogger():
 	if _log is None:
 		_setupLogging()
 
-	return logging.getLogger()
+	return logging.getLogger('deployment')
 
 log = getLogger()
 
