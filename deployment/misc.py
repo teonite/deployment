@@ -136,8 +136,8 @@ def config_validate_section(config, section):
 		_validate_entry(config, 'mysql_password', required=True, default=None)
 		#	MYSQL_DATABASE = base
 		_validate_entry(config, 'mysql_database', required=True, default=None)
-		#	MYSQL_MIGRATION_DIR = test
-#		_validate_entry(config, 'mysql_migration_dir', required=True, default=None)
+		#	MYSQL_REMOTE_DIR = test
+		_validate_entry(config, 'mysql_remote_dir', required=True, default=None)
 
 	elif section == 'source':
 	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
@@ -174,6 +174,7 @@ def config_validate_section(config, section):
 	else:
 		raise Exception('Invalid section provided!')
 
+	pretty_print('Config section %s is valid!' % section)
 	return config
 
 def list_dir(dir_=None):

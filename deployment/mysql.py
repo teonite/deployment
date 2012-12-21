@@ -79,7 +79,7 @@ def mysql_db_clone(config_f = 'config.ini'):
 	config_validate_section(config, 'mysql')
 	_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 
-def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user):
+def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user, remote_dir):
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
@@ -88,6 +88,7 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 #	env.use_ssh_config = True
 
 	try:
+		date = datetime.now().strftime("%Y%m%d_%H%M%S")
 #		pretty_print("Current working directory: %s" % os.getcwd())
 		f = []
 		for (dirpath, dirname, filenames) in os.walk(dir):
@@ -96,17 +97,24 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 		f.sort()
 		pretty_print('Files: %s' % f)
 		os.chdir(dir)
+		remote_dir = os.path.join(remote_dir, date)
+		pretty_print('Creating directory %s' % remote_dir, 'info')
+		run('mkdir -p %s' % remote_dir)
 		for file in f:
-			pretty_print('Migrating file %s' % file, 'info')
-			put(file)
-			with hide('running'):
-				run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
-			run('rm %s' % file)
+			pretty_print('Uploading file: %s' % file, 'info')
+			put(file, remote_dir)
+
+		with cd(remote_dir):
+			for file in f:
+				pretty_print('Migrating file %s' % file, 'info')
+				with hide('running'):
+					run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
+#			run('rm %s' % file)
 
 		pretty_print('[+] MySQL migrate finished.', 'info')
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 		raise Exception
 
 def mysql_db_migrate(migration_dir = None, config_f = 'config.ini'):
@@ -115,7 +123,7 @@ def mysql_db_migrate(migration_dir = None, config_f = 'config.ini'):
 		raise NotConfiguredError('Migration dir not set.')
 
 	config_validate_section(config, 'mysql')
-	_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+	_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_remote_dir'])
 
 def	_db_migrate(config, migration_dir=None):
 	pretty_print("[+] Starting database migration.", 'info')
@@ -125,10 +133,10 @@ def	_db_migrate(config, migration_dir=None):
 			raise NotConfiguredError
 		config_validate_section(config, 'mysql')
 
-		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 		if migration_dir:
 			pretty_print("Migration directory provided. Running.", 'info')
-			_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
+			_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_remote_dir'])
 		else:
 			pretty_print("No migration directory, omitting.", "info")
 
