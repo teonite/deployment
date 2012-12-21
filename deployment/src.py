@@ -118,12 +118,12 @@ def _src_upload(file, user, host, dir):
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
 #	env.use_ssh_config = True
-	pretty_print("[+] Starting file upload.", 'info')
+	pretty_print("[+] Starting file '%s' upload (to %s)" % (file, dir), 'info')
 
 	pretty_print('CWD: %s' % os.getcwd())
 	old_dir = os.getcwd()
-	if len(os.path.dirname(file)):
-		os.chdir(os.path.dirname(file))
+	#if len(os.path.dirname(file)):
+		#os.chdir(os.path.dirname(file))
 	put(file, "%s" % os.path.join(dir, os.path.basename(file)))
 	pretty_print("[+] File upload finished", 'info')
 	os.chdir(old_dir)
