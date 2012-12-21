@@ -19,10 +19,11 @@ from fabric.api import run
 from misc import *
 
 def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	pretty_print('[+] Starting MySQL dump.', 'info')
 	env.hosts = [host]
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
+
+	pretty_print('[+] Starting MySQL dump.', 'info')
 
 	with hide('running'):
 		pretty_print('Running mysqldump.', 'info')
@@ -35,10 +36,12 @@ def mysql_db_dump(config_f = 'config.ini'):
 	_mysql_db_dump(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	pretty_print('[+] Starting MySQL restore.', 'info')
 	env.hosts = [host]
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
+
+	pretty_print('[+] Starting MySQL restore.', 'info')
+
 #	env.use_ssh_config = True
 	with hide('running'):
 		pretty_print('Restoring to %s from %s' % (database, filename), 'info')
@@ -52,12 +55,12 @@ def mysql_db_restore(config_f = 'config.ini'):
 	_mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpfile='temp.sql'):
-	pretty_print('[+] Starting MySQL clone.', 'info')
-
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
-#	env.use_ssh_config = True
+	#	env.use_ssh_config = True
+
+	pretty_print('[+] Starting MySQL clone.', 'info')
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
@@ -77,11 +80,11 @@ def mysql_db_clone(config_f = 'config.ini'):
 	_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 
 def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user):
-	pretty_print('[+] Starting MySQL migrate', 'info')
-
 	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
+
+	pretty_print('[+] Starting MySQL migrate', 'info')
 #	env.use_ssh_config = True
 
 	try:
