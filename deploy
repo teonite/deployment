@@ -112,4 +112,4 @@ if __name__ == "__main__":
 			usage()
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
