@@ -230,7 +230,7 @@ def src_remote_config(config_f = 'config.ini'):
 
 	config_validate_section(config, 'source')
 	config_validate_section(config, 'deployment')
-	_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	pretty_print("[+] Starting remote deployment", 'info')
@@ -311,8 +311,8 @@ def _deploy(config):
 		_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
-		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
 		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
+		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
 		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
