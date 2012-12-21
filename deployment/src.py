@@ -192,9 +192,9 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 		run('mv %s %s-%s' % (dest_dir, dest_dir, date))
 		run('mkdir -p %s' % dest_dir)
 
-	with cd(file_dir):
-		pretty_print('Extracting files', 'info')
-		run('tar xvf %s -C %s' % (file, dest_dir))
+	#with cd(file_dir):
+	pretty_print('Extracting files', 'info')
+	run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
 
 	pretty_print("[+] Remote extract finished", 'info')
 
