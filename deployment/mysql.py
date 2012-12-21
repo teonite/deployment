@@ -10,7 +10,7 @@ from __future__ import print_function
 import sys
 from datetime import datetime
 
-from fabric.context_managers import cd
+from fabric.context_managers import cd, hide
 from fabric.operations import put
 from fabric.state import env
 from fabric.api import run
@@ -24,7 +24,9 @@ def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_us
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
 
-	run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
+	with hide('running'):
+		pretty_print('Running mysqldump.', 'info')
+		run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL dump finished.', 'info')
 
 def mysql_db_dump(config_f = 'config.ini'):
@@ -38,8 +40,9 @@ def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host
 	env.user = host_user
 	env.host_string = "%s@%s" %(host_user,host)
 #	env.use_ssh_config = True
-
-	run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
+	with hide('running'):
+		pretty_print('Restoring to %s from %s' % (database, filename), 'info')
+		run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL restore finished.', 'info')
 
 def mysql_db_restore(config_f = 'config.ini'):
@@ -58,10 +61,12 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpf
 
 	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
 
-	_mysql_db_dump(dumpfile, database, dbhost, dbuser, dbpassword, host, host_user)
-	run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
+	with hide('running'):
+		_mysql_db_dump(dumpfile, database, dbhost, dbuser, dbpassword, host, host_user)
+		pretty_print('Creating new database: %s' % new_database)
+		run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
 											'\"CREATE DATABASE %s\"' % new_database))
-	_mysql_db_restore(dumpfile, new_database, dbhost, dbuser, dbpassword, host, host_user)
+		_mysql_db_restore(dumpfile, new_database, dbhost, dbuser, dbpassword, host, host_user)
 
 	pretty_print('[+] MySQL clone finished.', 'info')
 
@@ -91,7 +96,8 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 		for file in f:
 			pretty_print('Migrating file %s' % file, 'info')
 			put(file)
-			run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
+			with hide('running'):
+				run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
 			run('rm %s' % file)
 
 		pretty_print('[+] MySQL migrate finished.', 'info')
