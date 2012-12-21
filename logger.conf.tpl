@@ -15,6 +15,7 @@ handlers=console,graypy
 level=INFO
 handlers=console,graypy
 qualname=deployment
+propagate=0
 
 [handler_console]
 class=StreamHandler
