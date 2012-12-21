@@ -154,7 +154,7 @@ def config_validate_section(config, section):
 		_validate_entry(config, 'upload_dir', required=False, default='')
 
 		#		EXTRACT_DIR = extract
-		_validate_entry(config, 'extract_dir', required=True, default=None)
+#		_validate_entry(config, 'extract_dir', required=True, default=None)
 
 		#		REMOTE_HOST = 192.168.56.101
 		_validate_entry(config, 'remote_host', required=True, default=None)

@@ -7,7 +7,6 @@ FILE_NAME = src.tar
 
 ;[Deployment]
 UPLOAD_DIR = ~
-EXTRACT_DIR = extract
 REMOTE_HOST = 192.168.56.101
 REMOTE_USER = kmk
 UPLOAD_CLEAN = False

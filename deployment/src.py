@@ -234,17 +234,17 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 
 	path = env.cwd
 
-	deploy_dir = datetime.now().strftime("%Y%m%d-%H%M%S")
-	pretty_print("current working dir: %s" % env.cwd)
-	if not files.exists(dst_dir, verbose=True):
-		run('mkdir -p %s' % dst_dir)
+#	deploy_dir = datetime.now().strftime("%Y%m%d-%H%M%S")
+#	pretty_print("current working dir: %s" % env.cwd)
+#	if not files.exists(dst_dir, verbose=True):
+#		run('mkdir -p %s' % dst_dir)
 
 	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
 	with cd(dst_dir):
-		if not files.exists(deploy_dir, verbose=True):
-			run('mkdir -p %s' % deploy_dir)
-		run('cp -Rfv %s %s' % (os.path.join('..', src_dir, "*"), deploy_dir))
-		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
+#		if not files.exists(deploy_dir, verbose=True):
+#			run('mkdir -p %s' % deploy_dir)
+#		run('cp -Rfv %s %s' % (os.path.join('..', src_dir, "*"), deploy_dir))
+#		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
 		with settings(warn_only=True):
 			if not run('test -L previous').failed:
 				run('rm -f previous')
@@ -252,7 +252,7 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 
 			if not run('test -L current').failed:
 				run('mv current previous')
-		run('ln -s %s current' % deploy_dir)
+		run('ln -s %s current' % os.path.basename(src_dir))
 
 	pretty_print("[+] Remote deployment finished", 'info')
 
@@ -302,11 +302,11 @@ def _deploy(config):
 		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
 		_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
-		_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
-		_src_remote_config(config['config_to_copy'], config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
-		_src_remote_deploy(config['extract_dir'], config['deploy_dir'], config['remote_user'], config['remote_host'])
+		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
+		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
+		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
 
-		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower)
+		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
 		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
 			_src_clean(config['local_dir'], config['file_name'], date)
 		else:
