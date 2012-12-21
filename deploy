@@ -22,7 +22,7 @@ env.host_string = 'localhost'
 def usage():
 	print(' ')
 	print('				TEONITE deployment and database migration tool')
-	print('				  Copyright (C) 2012 TEONITE')
+	print('					Copyright (C) 2012 TEONITE')
 	print(' ')
 	print('Usage:')
 	print('	python %s <command> <parameter>' % os.path.basename(main.__file__))
