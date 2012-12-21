@@ -23,7 +23,7 @@ import json
 
 from misc import *
 
-progress = RemoteProgress()
+#progress = RemoteProgress()
 
 def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
 	pretty_print('[+] Repository clone start: %s' % dir, 'info')
@@ -45,14 +45,14 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 	try:
 		#repo = Repo(dir)
 		pretty_print('Clonning repo.', 'info')
-		repo = Repo.clone_from(repo, date, progress)
+		repo = Repo.clone_from(repo, date)
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
 		if len(repo) == 0:
 			pretty_print('Repository not selected. Returning.', 'info')
 			raise InvalidGitRepositoryError
-		repo = Repo.clone_from(repo, date, progress)
+		repo = Repo.clone_from(repo, date)
 
 	os.chdir(old_dir)
 	#repo.create_remote('origin', config.GIT_REPO)
