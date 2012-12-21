@@ -121,8 +121,12 @@ def _src_upload(file, user, host, dir):
 	pretty_print("[+] Starting file upload.", 'info')
 
 	pretty_print('CWD: %s' % os.getcwd())
-	put(file, "%s/%s" %(dir, os.path.basename(file)))
+	old_dir = os.getcwd()
+	if len(os.path.dirname(file)):
+		os.chdir(os.path.dirname(file))
+	put(file, "%s" % os.path.join(dir, os.path.basename(file)))
 	pretty_print("[+] File upload finished", 'info')
+	os.chdir(old_dir)
 
 def src_upload(config_f = 'config.ini'):
 	config = prepare_config(config_f)
