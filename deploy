@@ -35,7 +35,7 @@ def usage():
 	print('	- src_upload - upload packed file from local folder to remote host')
 	print('	- src_remote_test - test remote host')
 	print('	- src_remote_extract - extract uploaded file')
-	print('	- src_remote_config - copy config from current to extract_dir')
+	print('	- src_remote_config - copy config from previous to current')
 	print('	- src_remote_deploy - deploys new version')
 	print('	- src_remote_rollback - backs to previous version')
 	print('	- mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
