@@ -10,7 +10,6 @@ from __future__ import print_function
 import os
 import sys
 import shutil
-import re
 from datetime import datetime
 
 from fabric.context_managers import cd
@@ -18,7 +17,7 @@ from fabric.state import env
 from fabric.api import run, put, settings
 from fabric.contrib import files
 
-from git import Repo, InvalidGitRepositoryError, RemoteProgress
+from git import Repo, InvalidGitRepositoryError
 import json
 
 from misc import *
@@ -219,18 +218,18 @@ def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 		run('mkdir -p %s' %dst_dir)
 
 	for object in filelist:
-		if files.exists(os.path.join(dst_dir, 'current', object['src']), verbose=True):
+		if files.exists(os.path.join(dst_dir, object['src']), verbose=True):
 			pretty_print('Copying file %s' %object, 'info')
-			run('cp -rf %s %s' % (os.path.join(dst_dir, 'current', object['src']), os.path.join(src_dir, object['dest'])))
+			run('cp -rf %s %s' % (os.path.join(dst_dir, object['src']), os.path.join(src_dir, object['dest'])))
 		else:
-			pretty_print('File does not exists: %s, ommiting' % os.path.join(dst_dir, 'current', object['src']), 'error')
+			pretty_print('File does not exists: %s, ommiting' % os.path.join(dst_dir, object['src']), 'error')
 
 def src_remote_config(config_f = 'config.ini'):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'source')
 	config_validate_section(config, 'deployment')
-	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
+	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], 'current'), config['remote_user'], config['remote_host'])
 
 def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	pretty_print("[+] Starting remote deployment", 'info')
@@ -312,7 +311,7 @@ def _deploy(config):
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
 		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
-		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
+		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), os.path.join(config['deploy_dir'], 'previous'), config['remote_user'], config['remote_host'])
 
 		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
 		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
