@@ -171,6 +171,13 @@ def config_validate_section(config, section):
 
 		# UPLOAD_CLEAN = False
 		_validate_entry(config, 'upload_clean', required=False, default='False')
+
+		#		POST_DEPLOY = echo "DONE"
+		_validate_entry(config, 'post_deploy', required=False, default='')
+
+		#		PRE_DEPLOY = echo "START"
+		_validate_entry(config, 'pre_deploy', required=False, default='')
+
 	else:
 		raise Exception('Invalid section provided!')
 

@@ -38,6 +38,8 @@ def usage():
 	print('	- src_remote_config - copy config from previous to current')
 	print('	- src_remote_deploy - deploys new version')
 	print('	- src_remote_rollback - backs to previous version')
+	print('	- src_pre_deploy - runs pre_deploy command from config file')
+	print('	- src_post_deploy - runs post_deploy command from config file')
 	print('	- mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
 	print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
 	print('	- mysql_db_dump - dump database to selected file')
@@ -98,6 +100,10 @@ if __name__ == "__main__":
 			src_remote_deploy(config_f)
 		elif s == 'src_remote_rollback':
 			src_remote_rollback(config_f)
+		elif s == 'src_pre_deploy':
+			src_pre_deploy(config_f)
+		elif s == 'src_post_deploy':
+			src_post_deploy(config_f)
 		elif s == 'mysql_db_clone':
 			mysql_db_clone(config_f)
 		elif s == 'mysql_db_migrate':

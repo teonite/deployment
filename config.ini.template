@@ -13,6 +13,8 @@ UPLOAD_CLEAN = False
 
 DEPLOY_DIR = deploy
 CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
+POST_DEPLOY = echo "DONE"
+PRE_DEPLOY = echo "START"
 
 ; not used in this version of script
 ENV_DIR = ''

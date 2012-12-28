@@ -299,6 +299,46 @@ def src_remote_rollback(config_f = 'config.ini'):
 	config_validate_section(config, 'deployment')
 	_src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
 
+def _src_pre_deploy(config):
+	env.host = config['remote_host']
+	env.user = config['remote_user']
+	env.host_string = "%s@%s" %(env.user,env.host)
+
+	pretty_print("[+] Starting remote pre-deploy command", 'info')
+
+	if not len(config['pre_deploy']):
+		raise Exception('Pre_deploy command not provided')
+
+	_src_remote_test(env.user, env.host)
+	run(config['pre_deploy'])
+
+	pretty_print("[+] Remote pre-deploy command finished", 'info')
+
+def src_pre_deploy(config_f='config.ini'):
+	config = prepare_config(config_f)
+	config_validate_section(config, 'deployment')
+	_src_pre_deploy(config)
+
+def _src_post_deploy(config):
+	env.host = config['remote_host']
+	env.user = config['remote_user']
+	env.host_string = "%s@%s" %(env.user,env.host)
+
+	pretty_print("[+] Starting remote post-deploy command", 'info')
+
+	if not len(config['post_deploy']):
+		raise Exception('Post_deploy command not provided')
+
+	_src_remote_test(env.user, env.host)
+	run(config['post_deploy'])
+
+	pretty_print("[+] Remote post-deploy command finished", 'info')
+
+def src_post_deploy(config_f='config.ini'):
+	config = prepare_config(config_f)
+	config_validate_section(config, 'deployment')
+	_src_post_deploy(config)
+
 def _deploy(config):
 	pretty_print("[+] Starting deployment.", 'info')
 
@@ -312,12 +352,14 @@ def _deploy(config):
 		config_validate_section(config, 'deployment')
 
 		_src_remote_test(config['remote_user'], config['remote_host'])
+		_src_pre_deploy(config)
 		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
 		_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
 		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
 		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
+		_src_post_deploy(config)
 
 		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
 		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
