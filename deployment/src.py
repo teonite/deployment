@@ -123,6 +123,12 @@ def _src_upload(file, user, host, dir):
 	old_dir = os.getcwd()
 	#if len(os.path.dirname(file)):
 		#os.chdir(os.path.dirname(file))
+	if not files.exists(dir):
+		pretty_print('Target directory not found, creating.','info')
+		run('mkdir -p %s' % dir)
+	else:
+		pretty_print('Target directory found, uploading.')
+
 	put(file, "%s" % os.path.join(dir, os.path.basename(file)))
 	pretty_print("[+] File upload finished", 'info')
 	os.chdir(old_dir)
@@ -214,15 +220,15 @@ def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 
 	filelist = json.loads(json_string)
 	if not files.exists(dst_dir):
-		pretty_print('%s does not exists. Creating.' % dst_dir, 'info')
+		pretty_print('Target directory %s does not exists. Creating.' % dst_dir, 'info')
 		run('mkdir -p %s' %dst_dir)
 
 	for object in filelist:
-		if files.exists(os.path.join(dst_dir, object['src']), verbose=True):
+		if files.exists(os.path.join(src_dir, object['src']), verbose=True):
 			pretty_print('Copying file %s' %object, 'info')
-			run('cp -rf %s %s' % (os.path.join(dst_dir, object['src']), os.path.join(src_dir, object['dest'])))
+			run('cp -rf %s %s' % (os.path.join(src_dir, object['src']), os.path.join(dst_dir, object['dest'])))
 		else:
-			pretty_print('File does not exists: %s, ommiting' % os.path.join(dst_dir, object['src']), 'error')
+			pretty_print('File does not exists: %s, ommiting' % os.path.join(src_dir, object['src']), 'error')
 
 def src_remote_config(config_f = 'config.ini'):
 	config = prepare_config(config_f)
@@ -311,7 +317,7 @@ def _deploy(config):
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
 		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
-		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], date), os.path.join(config['deploy_dir'], 'previous'), config['remote_user'], config['remote_host'])
+		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
 
 		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
 		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
