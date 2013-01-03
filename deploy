@@ -108,7 +108,10 @@ if __name__ == "__main__":
 		elif s == 'src_remote_test':
 			src_remote_test(config_f)
 		elif s == 'src_remote_extract':
-			src_remote_extract(config_f)
+			if len(sys.argv) == 2:
+				src_remote_extract(config_f)
+			elif len(sys.argv) == 3:
+				src_remote_extract(config_f, sys.argv[2])
 		elif s == 'src_remote_config':
 			src_remote_config(config_f)
 		elif s == 'src_remote_deploy':
