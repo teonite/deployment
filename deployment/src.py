@@ -177,7 +177,7 @@ def _src_clean(dir, file, to_delete):
 #		break
 #	for dir in f:
 	if os.path.isdir(to_delete):
-		pretty_print('Directory %s found, deleting.' % to_delete)
+		pretty_print('Directory %s found, deleting.' % to_delete, 'info')
 		shutil.rmtree(to_delete)
 
 	os.chdir(old_dir)
@@ -202,7 +202,7 @@ def src_remote_test(config_f = 'config.ini'):
 
 def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	pretty_print("[+] Starting remote extract", 'info')
-
+	pretty_print("Extracting to directory %s" % dest_dir)
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)

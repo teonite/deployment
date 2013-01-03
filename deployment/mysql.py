@@ -14,9 +14,31 @@ from fabric.context_managers import cd, hide
 from fabric.operations import put
 from fabric.state import env
 from fabric.api import run
-
+from fabric.contrib import files
 
 from misc import *
+
+def _mysql_dump_remove(filename,  host, host_user):
+	env.host = host
+	env.user = host_user
+	env.host_string = "%s@%s" %(host_user,host)
+
+	pretty_print("[+] Starting dump remove.", 'info')
+
+	if files.exists(filename):
+		pretty_print('File %s found. Removing.' % filename)
+		run('rm %s' % filename)
+	else:
+		raise Exception('Dump file not found.')
+
+	pretty_print("[+] Dump remove finished.", 'info')
+
+def mysql_dump_remove(config_f = 'config.ini'):
+	config = prepare_config(config_f)
+	config_validate_section(config, 'mysql')
+
+	_mysql_dump_remove(config['mysql_dumpfile'], config['mysql_shell_host'], config['mysql_shell_user'])
+
 
 def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	env.hosts = [host]
@@ -143,6 +165,8 @@ def	_db_migrate(config, migration_dir=None):
 			_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_remote_dir'])
 		else:
 			pretty_print("No migration directory, omitting.", "info")
+
+		_mysql_dump_remove(config['mysql_dumpfile'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 		pretty_print("[+] Database migration finished.", 'info')
 	except:

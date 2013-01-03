@@ -45,6 +45,7 @@ def usage():
 	print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
 	print('	- mysql_db_dump - dump database to selected file')
 	print('	- mysql_db_restore - restore database from file')
+	print('	- mysql_dump_remove - remove dump file from remote host')
 	print(' ')
 	print('Parameters: (optional)')
 	print('	-c, --config <filename> - if not selected, config.ini is selected')
@@ -138,6 +139,8 @@ if __name__ == "__main__":
 			mysql_db_dump(config_f)
 		elif s == 'mysql_db_restore':
 			mysql_db_restore(config_f)
+		elif s == 'mysql_dump_remove':
+			mysql_dump_remove(config_f)
 		else:
 			usage()
 	except:
