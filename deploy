@@ -30,8 +30,8 @@ def usage():
 	print('Commands:')
 	print('	- deploy - deploys new version')
 	print('	- db_migrate <migration_folder> - migrate database to new version')
-	print('	- src_clone <subfolder> - clone repo to subfolder in local folder (selected in config.ini). Default - current date')
-	print('	- src_prepare <subfolder> - archive repo from subfolder in local folder (selected in config.ini) to file')
+	print('	- src_clone <folder> <subfolder> - clone repo to subfolder in local folder (selected in config.ini). Default - current date')
+	print('	- src_prepare <folder> <subfolder> - archive repo from subfolder in local folder (selected in config.ini) to file')
 	print('	- src_upload - upload packed file from local folder to remote host')
 	print('	- src_remote_test - test remote host')
 	print('	- src_remote_extract - extract uploaded file')
@@ -81,13 +81,17 @@ if __name__ == "__main__":
 		elif s == 'src_clone':
 			if len(sys.argv) == 2:
 				src_clone(config_f)
-			else:
+			elif len(sys.argv) == 3:
 				src_clone(config_f, sys.argv[2])
+			else:
+				src_clone(config_f, sys.argv[2], sys.argv[3])
 		elif s == 'src_prepare':
 			if len(sys.argv) == 2:
 				src_prepare(config_f)
-			else:
+			elif len(sys.argv) == 3:
 				src_prepare(config_f, sys.argv[2])
+			else:
+				src_prepare(config_f, sys.argv[2], sys.argv[3])
 		elif s == 'src_upload':
 			src_upload(config_f)
 		elif s == 'src_remote_test':

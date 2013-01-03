@@ -74,11 +74,14 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 
 	pretty_print('[+] Repository clone finished', 'info')
 
-def src_clone(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def src_clone(config_f = 'config.ini', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'source')
-	_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
+	if len(folder):
+		_src_clone(folder, config['branch'], config['git_repo'], date)
+	else:
+		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
 
 def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
@@ -106,11 +109,25 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 	os.chdir(old_dir)
 	pretty_print('[+] Archive prepare finished', 'info')
 
-def src_prepare(config_f = 'config.ini', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def src_prepare(config_f = 'config.ini', folder = '', date = ''):
 	config = prepare_config(config_f)
-
+	#1170 - change
 	config_validate_section(config, 'source')
-	_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
+
+	if not len(folder):
+		folder = config['local_dir']
+
+	folder = os.path.expanduser(folder)
+
+	if not len(date): #prepare the newest directory
+		if not folder.startswith('/'):
+			folder = os.path.join(os.getcwd(), folder)
+		pretty_print("Folder: %s" % folder)
+		all_subdirs = [d for d in os.listdir(folder) if os.path.isdir(os.path.join(folder,d))]
+		pretty_print('Subdirs: %s' % all_subdirs)
+		date = max(all_subdirs, key=os.path.getmtime)
+
+	_src_prepare(config['file_name'], folder, config['branch'], date)
 
 def _src_upload(file, user, host, dir):
 	env.host = host
