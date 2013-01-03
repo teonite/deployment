@@ -120,6 +120,7 @@ def src_prepare(config_f = 'config.ini', folder = '', date = ''):
 	folder = os.path.expanduser(folder)
 
 	if not len(date): #prepare the newest directory
+		pretty_print("Subfolder not provided, assuming newest.", 'info')
 		if not folder.startswith('/'):
 			folder = os.path.join(os.getcwd(), folder)
 		pretty_print("Folder: %s" % folder)

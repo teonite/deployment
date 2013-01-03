@@ -37,7 +37,7 @@ def usage():
 	print('	- src_remote_test - test remote host')
 	print('	- src_remote_extract <subfolder> - extract uploaded file to selected subfolder of deploy_dir, default current date')
 	print('	- src_remote_config - copy config from previous to current')
-	print('	- src_remote_deploy - deploys new version')
+	print('	- src_remote_deploy <subfolder> - deploys new version')
 	print('	- src_remote_rollback - backs to previous version')
 	print('	- src_pre_deploy - runs pre_deploy command from config file')
 	print('	- src_post_deploy - runs post_deploy command from config file')
