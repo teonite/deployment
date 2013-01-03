@@ -41,7 +41,7 @@ def usage():
 	print('	- src_remote_rollback - backs to previous version')
 	print('	- src_pre_deploy - runs pre_deploy command from config file')
 	print('	- src_post_deploy - runs post_deploy command from config file')
-	print('	- mysql_db_clone - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
+	print('	- mysql_db_clone <db_name> - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
 	print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
 	print('	- mysql_db_dump - dump database to selected file')
 	print('	- mysql_db_restore - restore database from file')
@@ -123,7 +123,10 @@ if __name__ == "__main__":
 		elif s == 'src_post_deploy':
 			src_post_deploy(config_f)
 		elif s == 'mysql_db_clone':
-			mysql_db_clone(config_f)
+			if len(sys.argv) == 2:
+				mysql_db_clone(config_f)
+			else:
+				mysql_db_clone(config_f, sys.argv[2])
 		elif s == 'mysql_db_migrate':
 			if len(sys.argv) == 2:
 				raise Exception('Migration dir not provided, returning.')

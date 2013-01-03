@@ -73,11 +73,15 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpf
 
 	pretty_print('[+] MySQL clone finished.', 'info')
 
-def mysql_db_clone(config_f = 'config.ini'):
+def mysql_db_clone(config_f = 'config.ini', database = ''):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'mysql')
-	_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
+	if not len(database):
+		pretty_print("Database name not provided, assuming database from config.", "info")
+		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
+	else:
+		_mysql_db_clone(database, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 
 def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user, remote_dir):
 	env.host = host
