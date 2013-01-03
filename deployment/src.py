@@ -264,21 +264,10 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-	#	env.use_ssh_config = True
 
 	path = env.cwd
 
-#	deploy_dir = datetime.now().strftime("%Y%m%d-%H%M%S")
-#	pretty_print("current working dir: %s" % env.cwd)
-#	if not files.exists(dst_dir, verbose=True):
-#		run('mkdir -p %s' % dst_dir)
-
-	#run('cp -Rfv %s %s' % (os.path.join(src_dir, "*"), dst_dir))
 	with cd(dst_dir):
-#		if not files.exists(deploy_dir, verbose=True):
-#			run('mkdir -p %s' % deploy_dir)
-#		run('cp -Rfv %s %s' % (os.path.join('..', src_dir, "*"), deploy_dir))
-#		#if files.exists(os.path.join(dst_dir, 'current'), verbose=True):
 		with settings(warn_only=True):
 			if not run('test -L previous').failed:
 				run('rm -f previous')
@@ -290,12 +279,15 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 
 	pretty_print("[+] Remote deployment finished", 'info')
 
-def src_remote_deploy(config_f = 'config.ini'):
+def src_remote_deploy(config_f = 'config.ini', directory = ''):
 	config = prepare_config(config_f)
+
+	if not len(directory):
+		raise Exception("Source directory not provided.")
 
 	config_validate_section(config, 'source')
 	config_validate_section(config, 'deployment')
-	_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+	_src_remote_deploy(directory, config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 def	_src_remote_rollback(dir, host, user):
 	pretty_print("[+] Starting remote rollback", 'info')
