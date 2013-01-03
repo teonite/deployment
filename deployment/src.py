@@ -123,10 +123,13 @@ def src_prepare(config_f = 'config.ini', folder = '', date = ''):
 		if not folder.startswith('/'):
 			folder = os.path.join(os.getcwd(), folder)
 		pretty_print("Folder: %s" % folder)
-		all_subdirs = [d for d in os.listdir(folder) if os.path.isdir(os.path.join(folder,d))]
+		all_subdirs = [os.path.join(folder, d) for d in os.listdir(folder) if os.path.isdir(os.path.join(folder,d))]
 		pretty_print('Subdirs: %s' % all_subdirs)
+		pretty_print("%s" % all_subdirs[0])
+
 		date = max(all_subdirs, key=os.path.getmtime)
 
+	pretty_print("Prepare completed, move to _src_prepare.")
 	_src_prepare(config['file_name'], folder, config['branch'], date)
 
 def _src_upload(file, user, host, dir):
@@ -220,12 +223,13 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 
 	pretty_print("[+] Remote extract finished", 'info')
 
-def src_remote_extract(config_f = 'config.ini'):
+def src_remote_extract(config_f = 'config.ini', subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = prepare_config(config_f)
 
 	config_validate_section(config, 'source')
 	config_validate_section(config, 'deployment')
-	_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
+	_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
 
 def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 	pretty_print("[+] Starting remote config copy", 'info')
