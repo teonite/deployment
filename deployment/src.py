@@ -46,10 +46,35 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 	os.chdir(dir)
 
 	try:
-		#repo = Repo(dir)
-		pretty_print('Clonning repo.', 'info')
-		repo = Repo.clone_from(repo, date)
+		if not os.path.isdir("%s/.git" % date): #repo = Repo(dir)
+			raise InvalidGitRepositoryError()
+
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
+		#pretty_print('Clonning repo.', 'info')
+		repo = Repo()
+
+		if not len(branch):
+			branch = repo.active_branch
+
+		if repo.active_branch is not branch:
+			pretty_print('Changing branch', 'info')
+			repo.git.checkout('head', b=branch)
+
+		pretty_print('Pulling changes', 'info')
+		repo.git.pull()
+
+		#	_pretty_print('Fetching changes.')
+
+		#	origin = repo.remotes.origin
+		#	origin.fetch()
+		#
+		#	if len(branch) == 0:
+		#		_pretty_print('Branch not supplied, assuming current one.')
+		#		origin.pull()
+		#	else:
+		#		_pretty_print('Pulling from \'%s\' branch' % branch)
+		#origin.pull(branch)
+
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
 		if len(repo) == 0:
@@ -59,18 +84,6 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 
 	os.chdir(old_dir)
 	#repo.create_remote('origin', config.GIT_REPO)
-
-	#	_pretty_print('Fetching changes.')
-
-	#	origin = repo.remotes.origin
-	#	origin.fetch()
-	#
-	#	if len(branch) == 0:
-	#		_pretty_print('Branch not supplied, assuming current one.')
-	#		origin.pull()
-	#	else:
-	#		_pretty_print('Pulling from \'%s\' branch' % branch)
-	#		origin.pull(branch)
 
 	pretty_print('[+] Repository clone finished', 'info')
 
@@ -353,17 +366,21 @@ def src_post_deploy(config_f='config.ini'):
 	config_validate_section(config, 'deployment')
 	_src_post_deploy(config)
 
-def _deploy(config):
+def _deploy(config, date = ''):
 	pretty_print("[+] Starting deployment.", 'info')
 
 	try:
 		if not config:
 			raise NotConfiguredError('Deploy - config not provided')
 
-		date = datetime.now().strftime("%Y%m%d_%H%M%S")
-
 		config_validate_section(config, 'source')
 		config_validate_section(config, 'deployment')
+
+		if not len(date):
+			if len(config['default_subdirectory']):
+				date = config['default_subdirectory']
+			else:
+				date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 		_src_remote_test(config['remote_user'], config['remote_host'])
 		_src_pre_deploy(config)
@@ -385,7 +402,7 @@ def _deploy(config):
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 
-def deploy(config_f = 'config.ini'):
+def deploy(config_f = 'config.ini', subfolder = ''):
 	config = prepare_config(config_f)
 
-	_deploy(config)
+	_deploy(config, subfolder)

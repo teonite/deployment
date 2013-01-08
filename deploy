@@ -29,7 +29,7 @@ def usage():
 	print('	python %s <command> <parameter>' % os.path.basename(main.__file__))
 	print(' ')
 	print('Commands:')
-	print('	- deploy - deploys new version')
+	print('	- deploy <local_subfolder> - deploys new version')
 	print('	- db_migrate <migration_folder> - migrate database to new version')
 	print('	- src_clone <folder> <subfolder> - clone repo to subfolder in local folder')
 	print('	- src_prepare <folder> <subfolder> - archive repo from subfolder in local folder to file')
@@ -84,7 +84,11 @@ if __name__ == "__main__":
 	try:
 		s = sys.argv[1]
 		if s == 'deploy':
-			deploy(config_f)
+			if len(sys.argv) == 2:
+				deploy(config_f, '')
+			else:
+				deploy(config_f, sys.argv[2])
+
 		elif s == 'db_migrate':
 			if len(sys.argv) == 2:
 				db_migrate(config_f, None)

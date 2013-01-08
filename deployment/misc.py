@@ -150,6 +150,9 @@ def config_validate_section(config, section):
 		#		FILE_NAME = src.tar
 		_validate_entry(config, 'file_name', required=False, default='src.tar')
 		config['file_name'] = os.path.expanduser(config['file_name'])
+		#		DEFAULT_SUBFOLDER = dupa
+		_validate_entry(config, 'default_subfolder', required=False, default='')
+
 	elif section == 'deployment':
 	#		UPLOAD_DIR = ~
 		_validate_entry(config, 'upload_dir', required=False, default='')
