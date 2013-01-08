@@ -49,16 +49,17 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 		if not os.path.isdir("%s/.git" % date): #repo = Repo(dir)
 			raise InvalidGitRepositoryError()
 
+		repo = Repo(date)
+
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 		#pretty_print('Clonning repo.', 'info')
-		repo = Repo()
 
 		if not len(branch):
 			branch = repo.active_branch
 
 		if repo.active_branch is not branch:
 			pretty_print('Changing branch', 'info')
-			repo.git.checkout('head', b=branch)
+			repo.git.checkout('master')
 
 		pretty_print('Pulling changes', 'info')
 		repo.git.pull()
@@ -404,5 +405,7 @@ def _deploy(config, date = ''):
 
 def deploy(config_f = 'config.ini', subfolder = ''):
 	config = prepare_config(config_f)
+
+	pretty_print("Deploy subfolder: %s" % subfolder)
 
 	_deploy(config, subfolder)
