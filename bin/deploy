@@ -63,7 +63,7 @@ if __name__ == "__main__":
 		usage()
 		sys.exit(2)
 
-	config_f = None
+	config_f = 'config/config.ini'
 	for o, a in opts:
 		if o == "-c" or o == "--config":
 			config_f = a

@@ -24,8 +24,9 @@ def _setupLogging():
 	"""
 	config_file = None
 
-	if os.path.exists('logger.conf'):
-		config_file = 'logger.conf'
+
+	if os.path.exists('/config/logger.conf'):
+		config_file = '/config/logger.conf'
 
 	if not config_file:
 		print ('FATAL: Cannot find logging configuration file')
