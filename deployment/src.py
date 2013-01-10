@@ -62,7 +62,7 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 			repo.git.checkout('master')
 
 		pretty_print('Pulling changes', 'info')
-		repo.git.pull()
+		repo.git.pull('origin', branch)
 
 		#	_pretty_print('Fetching changes.')
 
@@ -93,9 +93,9 @@ def src_clone(config_f = 'config.ini', folder = '', date = datetime.now().strfti
 
 	config_validate_section(config, 'source')
 	if len(folder):
-		_src_clone(folder, config['branch'], config['git_repo'], date)
+		_src_clone(folder, config['git_branch'], config['git_repo'], date)
 	else:
-		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
+		_src_clone(config['local_dir'], config['git_branch'], config['git_repo'], date)
 
 def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
@@ -111,12 +111,13 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 		raise Exception('Repository not found. Please provide correct one.')
 
 
-	if len(branch)==0:
-		pretty_print('Branch not selected. Archiving current one.', 'info')
-		repo.archive(open("%s" % file,'w'))
-	else:
-		pretty_print('Archiving branch %s' % branch, 'info')
-		repo.archive(open("%s" % file,'w'), branch)
+#	if len(branch)==0:
+#		pretty_print('Branch not selected. Archiving current one.', 'info')
+	pretty_print('Archiving current branch.', 'info')
+	repo.archive(open("%s" % file,'w'))
+#	else:
+#		pretty_print('Archiving branch %s' % branch, 'info')
+#		repo.archive(open("%s" % file,'w'), branch)
 
 #	except GitCommandError as ex:
 #		pretty_print('Something went wrong. Message: %s' % ex.__str__())
@@ -145,7 +146,7 @@ def src_prepare(config_f = 'config.ini', folder = '', date = ''):
 		date = max(all_subdirs, key=os.path.getmtime)
 
 	pretty_print("Prepare completed, move to _src_prepare.")
-	_src_prepare(config['file_name'], folder, config['branch'], date)
+	_src_prepare(config['file_name'], folder, config['git_branch'], date)
 
 def _src_upload(file, user, host, dir):
 	env.host = host
@@ -367,7 +368,7 @@ def src_post_deploy(config_f='config.ini'):
 	config_validate_section(config, 'deployment')
 	_src_post_deploy(config)
 
-def _deploy(config, date = ''):
+def _deploy(config, subdir = ''):
 	pretty_print("[+] Starting deployment.", 'info')
 
 	try:
@@ -377,16 +378,20 @@ def _deploy(config, date = ''):
 		config_validate_section(config, 'source')
 		config_validate_section(config, 'deployment')
 
-		if not len(date):
-			if len(config['default_subdirectory']):
-				date = config['default_subdirectory']
+		date = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+		if len(subdir):
+			repo = subdir
+		else:
+			if len(config['git_repo_local']):
+				repo = config['git_repo_local']
 			else:
-				date = datetime.now().strftime("%Y%m%d_%H%M%S")
+				repo = date
 
 		_src_remote_test(config['remote_user'], config['remote_host'])
 		_src_pre_deploy(config)
-		_src_clone(config['local_dir'], config['branch'], config['git_repo'], date)
-		_src_prepare(config['file_name'], config['local_dir'], config['branch'], date)
+		_src_clone(config['local_dir'], config['git_branch'], config['git_repo'], repo)
+		_src_prepare(config['file_name'], config['local_dir'], config['git_branch'], repo)
 		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
 		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])

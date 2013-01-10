@@ -142,16 +142,16 @@ def config_validate_section(config, section):
 	elif section == 'source':
 	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
 		_validate_entry(config, 'git_repo', required=True, default=None)
-		#		BRANCH = master
-		_validate_entry(config, 'branch', required=True, default=None)
+		#		GIT_BRANCH = master
+		_validate_entry(config, 'git_branch', required=True, default=None)
+		#		GIT_REPO_LOCAL = test
+		_validate_entry(config, 'git_repo_local', required=False, default='')
 		#		LOCAL_DIR = test
 		_validate_entry(config, 'local_dir', required=False, default=os.getcwd())
 		config['local_dir'] = os.path.expanduser(config['local_dir'])
 		#		FILE_NAME = src.tar
 		_validate_entry(config, 'file_name', required=False, default='src.tar')
 		config['file_name'] = os.path.expanduser(config['file_name'])
-		#		DEFAULT_SUBFOLDER = dupa
-		_validate_entry(config, 'default_subfolder', required=False, default='')
 
 	elif section == 'deployment':
 	#		UPLOAD_DIR = ~

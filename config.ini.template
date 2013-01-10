@@ -1,10 +1,10 @@
 ;[Source]
 [General]
 GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
-BRANCH = master
+GIT_BRANCH = master
+GIT_REPO_LOCAL = test
 LOCAL_DIR = test
 FILE_NAME = src.tar
-DEFAULT_SUBFOLDER = beta
 
 ;[Deployment]
 UPLOAD_DIR = ~
