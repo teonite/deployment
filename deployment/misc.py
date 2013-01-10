@@ -83,12 +83,12 @@ def _config_section_map(Config, section):
 	pretty_print('Reading finished. Returning.')
 	return dict1
 
-def _parse_config(filename):
+def _parse_config(filename, section):
 	pretty_print("Parsing config file: %s" % filename, 'info')
 	try:
 		config = ConfigParser.ConfigParser()
 		config.read(filename)
-		conf = _config_section_map(config, 'General')
+		conf = _config_section_map(config, section)
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
@@ -97,7 +97,7 @@ def _parse_config(filename):
 
 	return conf
 
-def _validate_entry(config, entry, required=True, default=None):
+def validate_entry(config, entry, required=True, default=None):
 	try:
 		if not len(config[entry]):
 			if not required:
@@ -118,75 +118,6 @@ def _validate_entry(config, entry, required=True, default=None):
 			pretty_print('%s not set. Please use correct one.' % entry, 'error')
 			raise NotConfiguredError('%s not set.' % entry)
 
-def config_validate_section(config, section):
-	pretty_print("Validating config section: %s" % section, 'info')
-	if section == 'mysql':
-	#	MYSQL_DUMPFILE = temp.sql
-		_validate_entry(config, 'mysql_dumpfile', required=False, default='dump.sql')
-		#	MYSQL_SHELL_USER = kmk
-		_validate_entry(config, 'mysql_shell_user', required=True, default=None)
-		#	MYSQL_SHELL_HOST = 192.168.56.101
-		_validate_entry(config, 'mysql_shell_host', required=True, default=None)
-		#	MYSQL_HOST = localhost
-		_validate_entry(config, 'mysql_host', required=False, default='localhost')
-
-		#	MYSQL_USER = root
-		_validate_entry(config, 'mysql_user', required=True, default=None)
-		#	MYSQL_PASSWORD = test
-		_validate_entry(config, 'mysql_password', required=True, default=None)
-		#	MYSQL_DATABASE = base
-		_validate_entry(config, 'mysql_database', required=True, default=None)
-		#	MYSQL_REMOTE_DIR = test
-		_validate_entry(config, 'mysql_remote_dir', required=True, default=None)
-
-	elif section == 'source':
-	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
-		_validate_entry(config, 'git_repo', required=True, default=None)
-		#		GIT_BRANCH = master
-		_validate_entry(config, 'git_branch', required=True, default=None)
-		#		GIT_REPO_LOCAL = test
-		_validate_entry(config, 'git_repo_local', required=False, default='')
-		#		LOCAL_DIR = test
-		_validate_entry(config, 'local_dir', required=False, default=os.getcwd())
-		config['local_dir'] = os.path.expanduser(config['local_dir'])
-		#		FILE_NAME = src.tar
-		_validate_entry(config, 'file_name', required=False, default='src.tar')
-		config['file_name'] = os.path.expanduser(config['file_name'])
-
-	elif section == 'deployment':
-	#		UPLOAD_DIR = ~
-		_validate_entry(config, 'upload_dir', required=False, default='')
-
-		#		EXTRACT_DIR = extract
-#		_validate_entry(config, 'extract_dir', required=True, default=None)
-
-		#		REMOTE_HOST = 192.168.56.101
-		_validate_entry(config, 'remote_host', required=True, default=None)
-
-		#		REMOTE_USER = kmk
-		_validate_entry(config, 'remote_user', required=True, default=None)
-
-		#		DEPLOY_DIR = deploy
-		_validate_entry(config, 'deploy_dir', required=True, default=None)
-
-		#		CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
-		_validate_entry(config, 'config_to_copy', required=True, default=None)
-
-		# UPLOAD_CLEAN = False
-		_validate_entry(config, 'upload_clean', required=False, default='False')
-
-		#		POST_DEPLOY = echo "DONE"
-		_validate_entry(config, 'post_deploy', required=False, default='')
-
-		#		PRE_DEPLOY = echo "START"
-		_validate_entry(config, 'pre_deploy', required=False, default='')
-
-	else:
-		raise Exception('Invalid section provided!')
-
-	pretty_print('Config section %s is valid!' % section)
-	return config
-
 def list_dir(dir_=None):
 	"""returns a list of files in a directory (dir_) as absolute paths"""
 	#dir_ = dir_ or env.cwd
@@ -194,13 +125,13 @@ def list_dir(dir_=None):
 	files = string_.replace("\r","").split("\n")
 	return files
 
-def prepare_config(config_f = None):
+def prepare_config(config_f = None, section = None):
 	config = None
 	try:
 		if not config_f:
-			config = _parse_config("config.ini")
+			config = _parse_config("config.ini", section)
 		else:
-			config = _parse_config(config_f)
+			config = _parse_config(config_f, section)
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()

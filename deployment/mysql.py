@@ -18,6 +18,32 @@ from fabric.contrib import files
 
 from misc import *
 
+def validate_config(config_f):
+	config = prepare_config(config_f, 'Migrate_MySQL')
+
+	pretty_print("Validating mysql config section", 'info')
+	#	MYSQL_DUMPFILE = temp.sql
+	validate_entry(config, 'mysql_dumpfile', required=False, default='dump.sql')
+	#	MYSQL_SHELL_USER = kmk
+	validate_entry(config, 'mysql_shell_user', required=True, default=None)
+	#	MYSQL_SHELL_HOST = 192.168.56.101
+	validate_entry(config, 'mysql_shell_host', required=True, default=None)
+	#	MYSQL_HOST = localhost
+	validate_entry(config, 'mysql_host', required=False, default='localhost')
+
+	#	MYSQL_USER = root
+	validate_entry(config, 'mysql_user', required=True, default=None)
+	#	MYSQL_PASSWORD = test
+	validate_entry(config, 'mysql_password', required=True, default=None)
+	#	MYSQL_DATABASE = base
+	validate_entry(config, 'mysql_database', required=True, default=None)
+	#	MYSQL_REMOTE_DIR = test
+	validate_entry(config, 'mysql_remote_dir', required=True, default=None)
+
+	pretty_print('Config is valid!', 'info')
+
+	return config
+
 def _mysql_dump_remove(filename,  host, host_user):
 	env.host = host
 	env.user = host_user
@@ -34,11 +60,9 @@ def _mysql_dump_remove(filename,  host, host_user):
 	pretty_print("[+] Dump remove finished.", 'info')
 
 def mysql_dump_remove(config_f = 'config.ini'):
-	config = prepare_config(config_f)
-	config_validate_section(config, 'mysql')
+	config = validate_config(config_f)
 
 	_mysql_dump_remove(config['mysql_dumpfile'], config['mysql_shell_host'], config['mysql_shell_user'])
-
 
 def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	env.hosts = [host]
@@ -53,8 +77,8 @@ def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_us
 	pretty_print('[+] MySQL dump finished.', 'info')
 
 def mysql_db_dump(config_f = 'config.ini'):
-	config = prepare_config(config_f)
-	config_validate_section(config, 'mysql')
+	config = validate_config(config_f)
+
 	_mysql_db_dump(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
@@ -71,9 +95,8 @@ def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host
 	pretty_print('[+] MySQL restore finished.', 'info')
 
 def mysql_db_restore(config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'mysql')
 	_mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
 
 def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpfile='temp.sql'):
@@ -96,9 +119,8 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpf
 	pretty_print('[+] MySQL clone finished.', 'info')
 
 def mysql_db_clone(config_f = 'config.ini', database = ''):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'mysql')
 	if not len(database):
 		pretty_print("Database name not provided, assuming database from config.", "info")
 		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
@@ -144,11 +166,11 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 		raise Exception
 
 def mysql_db_migrate(migration_dir = None, config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
+
 	if not migration_dir:
 		raise NotConfiguredError('Migration dir not set.')
 
-	config_validate_section(config, 'mysql')
 	_mysql_db_migrate(config['mysql_database'], migration_dir, config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_remote_dir'])
 
 def	_db_migrate(config, migration_dir=None):
@@ -157,7 +179,6 @@ def	_db_migrate(config, migration_dir=None):
 	try:
 		if not config:
 			raise NotConfiguredError
-		config_validate_section(config, 'mysql')
 
 		_mysql_db_clone(config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'], config['mysql_dumpfile'])
 		if migration_dir:
@@ -174,5 +195,6 @@ def	_db_migrate(config, migration_dir=None):
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 def db_migrate(config_f = 'config.ini', migration_dir = None):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
+
 	_db_migrate(config, migration_dir)

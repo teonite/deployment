@@ -24,6 +24,56 @@ from misc import *
 
 #progress = RemoteProgress()
 
+def validate_config(config_f):
+	config = prepare_config(config_f, 'Source')
+
+	pretty_print("Validating source config section", 'info')
+
+	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
+	validate_entry(config, 'git_repo', required=True, default=None)
+	#		GIT_BRANCH = master
+	validate_entry(config, 'git_branch', required=True, default=None)
+	#		GIT_REPO_LOCAL = test
+	validate_entry(config, 'git_repo_local', required=False, default='')
+	#		LOCAL_DIR = test
+	validate_entry(config, 'local_dir', required=False, default=os.getcwd())
+	config['local_dir'] = os.path.expanduser(config['local_dir'])
+	#		FILE_NAME = src.tar
+	validate_entry(config, 'file_name', required=False, default='src.tar')
+	config['file_name'] = os.path.expanduser(config['file_name'])
+
+	#		UPLOAD_DIR = ~
+	validate_entry(config, 'upload_dir', required=False, default='')
+
+	#		EXTRACT_DIR = extract
+	#		_validate_entry(config, 'extract_dir', required=True, default=None)
+
+	#		REMOTE_HOST = 192.168.56.101
+	validate_entry(config, 'remote_host', required=True, default=None)
+
+	#		REMOTE_USER = kmk
+	validate_entry(config, 'remote_user', required=True, default=None)
+
+	#		DEPLOY_DIR = deploy
+	validate_entry(config, 'deploy_dir', required=True, default=None)
+
+	#		CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
+	validate_entry(config, 'config_to_copy', required=True, default=None)
+
+	# UPLOAD_CLEAN = False
+	validate_entry(config, 'upload_clean', required=False, default='False')
+
+	#		POST_DEPLOY = echo "DONE"
+	validate_entry(config, 'post_deploy', required=False, default='')
+
+	#		PRE_DEPLOY = echo "START"
+	validate_entry(config, 'pre_deploy', required=False, default='')
+
+	pretty_print('Config is valid!', 'info')
+
+	return config
+
+
 def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
 	pretty_print('[+] Repository clone start: %s' % dir, 'info')
@@ -89,9 +139,8 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 	pretty_print('[+] Repository clone finished', 'info')
 
 def src_clone(config_f = 'config.ini', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'source')
 	if len(folder):
 		_src_clone(folder, config['git_branch'], config['git_repo'], date)
 	else:
@@ -125,9 +174,7 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 	pretty_print('[+] Archive prepare finished', 'info')
 
 def src_prepare(config_f = 'config.ini', folder = '', date = ''):
-	config = prepare_config(config_f)
-	#1170 - change
-	config_validate_section(config, 'source')
+	config = validate_config(config_f)
 
 	if not len(folder):
 		folder = config['local_dir']
@@ -170,10 +217,8 @@ def _src_upload(file, user, host, dir):
 	os.chdir(old_dir)
 
 def src_upload(config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'source')
-	config_validate_section(config, 'deployment')
 	_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 
 def _src_clean(dir, file, to_delete):
@@ -210,9 +255,8 @@ def _src_remote_test (user, host):
 	pretty_print('[+] Remote test finished', 'info')
 
 def src_remote_test(config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'deployment')
 	_src_remote_test(config['remote_user'], config['remote_host'])
 
 def	_src_remote_extract(file, file_dir, dest_dir, user, host):
@@ -240,10 +284,8 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	pretty_print("[+] Remote extract finished", 'info')
 
 def src_remote_extract(config_f = 'config.ini', subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'source')
-	config_validate_section(config, 'deployment')
 	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 	_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
 
@@ -268,10 +310,8 @@ def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 			pretty_print('File does not exists: %s, ommiting' % os.path.join(src_dir, object['src']), 'error')
 
 def src_remote_config(config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'source')
-	config_validate_section(config, 'deployment')
 	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], 'current'), config['remote_user'], config['remote_host'])
 
 def	_src_remote_deploy(src_dir, dst_dir, user, host):
@@ -296,13 +336,11 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	pretty_print("[+] Remote deployment finished", 'info')
 
 def src_remote_deploy(config_f = 'config.ini', directory = ''):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
 	if not len(directory):
 		raise Exception("Source directory not provided.")
 
-	config_validate_section(config, 'source')
-	config_validate_section(config, 'deployment')
 	_src_remote_deploy(directory, config['deploy_dir'], config['remote_user'], config['remote_host'])
 
 def	_src_remote_rollback(dir, host, user):
@@ -323,9 +361,8 @@ def	_src_remote_rollback(dir, host, user):
 	pretty_print("[+] Remote rollback finished", 'info')
 
 def src_remote_rollback(config_f = 'config.ini'):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
-	config_validate_section(config, 'deployment')
 	_src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
 
 def _src_pre_deploy(config):
@@ -344,8 +381,8 @@ def _src_pre_deploy(config):
 	pretty_print("[+] Remote pre-deploy command finished", 'info')
 
 def src_pre_deploy(config_f='config.ini'):
-	config = prepare_config(config_f)
-	config_validate_section(config, 'deployment')
+	config = validate_config(config_f)
+
 	_src_pre_deploy(config)
 
 def _src_post_deploy(config):
@@ -364,8 +401,8 @@ def _src_post_deploy(config):
 	pretty_print("[+] Remote post-deploy command finished", 'info')
 
 def src_post_deploy(config_f='config.ini'):
-	config = prepare_config(config_f)
-	config_validate_section(config, 'deployment')
+	config = validate_config(config_f)
+
 	_src_post_deploy(config)
 
 def _deploy(config, subdir = ''):
@@ -374,9 +411,6 @@ def _deploy(config, subdir = ''):
 	try:
 		if not config:
 			raise NotConfiguredError('Deploy - config not provided')
-
-		config_validate_section(config, 'source')
-		config_validate_section(config, 'deployment')
 
 		date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -409,7 +443,7 @@ def _deploy(config, subdir = ''):
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 
 def deploy(config_f = 'config.ini', subfolder = ''):
-	config = prepare_config(config_f)
+	config = validate_config(config_f)
 
 	pretty_print("Deploy subfolder: %s" % subfolder)
 

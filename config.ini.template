@@ -1,12 +1,10 @@
-;[Source]
-[General]
+[Source]
 GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
 GIT_BRANCH = master
 GIT_REPO_LOCAL = test
 LOCAL_DIR = test
 FILE_NAME = src.tar
 
-;[Deployment]
 UPLOAD_DIR = ~
 REMOTE_HOST = 192.168.56.101
 REMOTE_USER = kmk
@@ -20,7 +18,7 @@ PRE_DEPLOY = echo "START"
 ; not used in this version of script
 ENV_DIR = ''
 
-;[Migrate_MySQL]
+[Migrate_MySQL]
 MYSQL_DUMPFILE = temp.sql
 MYSQL_SHELL_USER = kmk
 MYSQL_SHELL_HOST = 192.168.56.101
