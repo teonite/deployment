@@ -24,9 +24,11 @@ def _setupLogging():
 	"""
 	config_file = None
 
+	if os.environ['VIRTUAL_ENV']:
+		config_file = os.path.join(os.environ['VIRTUAL_ENV'], 'config/logger.conf')
 
-	if os.path.exists('/config/logger.conf'):
-		config_file = '/config/logger.conf'
+	if os.path.exists('config/logger.conf'):
+		config_file = 'config/logger.conf'
 
 	if not config_file:
 		print ('FATAL: Cannot find logging configuration file')
