@@ -54,16 +54,6 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 		#pretty_print('Clonning repo.', 'info')
 
-		if not len(branch):
-			branch = repo.active_branch
-
-		if repo.active_branch is not branch:
-			pretty_print('Changing branch', 'info')
-			repo.git.checkout('master')
-
-		pretty_print('Pulling changes', 'info')
-		repo.git.pull('origin', branch)
-
 		#	_pretty_print('Fetching changes.')
 
 		#	origin = repo.remotes.origin
@@ -82,6 +72,16 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 			pretty_print('Repository not selected. Returning.', 'info')
 			raise InvalidGitRepositoryError
 		repo = Repo.clone_from(repo, date)
+
+	if not len(branch):
+		branch = repo.active_branch
+
+	if repo.active_branch is not branch:
+		pretty_print('Changing branch', 'info')
+		repo.git.checkout('master')
+
+	pretty_print('Pulling changes', 'info')
+	repo.git.pull('origin', branch)
 
 	os.chdir(old_dir)
 	#repo.create_remote('origin', config.GIT_REPO)
