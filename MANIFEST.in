@@ -1,8 +1,5 @@
-README.txt
-setup.py
-bin/deploy
-deployment/__init__.py
-deployment/misc.py
-deployment/mysql.py
-deployment/src.py
+include README.rst
+include setup.py
+
+recursive-include deployment *.py
 recursive-include conf *

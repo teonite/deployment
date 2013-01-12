@@ -24,14 +24,16 @@ def _setupLogging():
 	"""
 	config_file = None
 
-	if os.environ['VIRTUAL_ENV'] and os.path.exists(os.path.join(os.environ['VIRTUAL_ENV'], 'teonite/deployment/config/logger.conf')):
-		config_file = os.path.join(os.environ['VIRTUAL_ENV'], 'teonite/deployment/logger.conf')
+	if os.path.exists(os.path.expanduser('~/.teonite/deployment/logger.conf')):
+		config_file = os.path.expanduser('~/.teonite/deployment/logger.conf')
 
-	if os.path.exists('/usr/local/teonite/deployment/logger.conf'):
-		config_file = '/usr/local/teonite/deployment/logger.conf'
+	if os.path.exists('logger.conf'):
+		config_file = 'logger.conf'
 
 	if not config_file:
 		print ('FATAL: Cannot find logging configuration file')
+		print ('Probably you didn\'t initialize this script.')
+		print ('Please run this script with "init" command')
 		sys.exit()
 
 	logging.config.fileConfig(config_file)

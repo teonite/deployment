@@ -1,4 +1,4 @@
-[loggers]
+LOGGER="""[loggers]
 keys=root,deployment
 
 [handlers]
@@ -35,4 +35,4 @@ datefmt=
 
 [formatter_verbose]
 format=[%(asctime)s] "%(message)s"
-datefmt=%d/%b/%Y %H:%M:%S
+datefmt=%d/%b/%Y %H:%M:%S"""

@@ -1,9 +1,0 @@
-README.txt
-setup.py
-bin/deploy
-conf/config.ini.template
-conf/logger.conf.tpl
-deployment/__init__.py
-deployment/misc.py
-deployment/mysql.py
-deployment/src.py
