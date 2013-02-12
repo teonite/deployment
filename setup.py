@@ -6,7 +6,7 @@ with open('README.rst', 'r') as fh:
 
 setup(
 	name='deployment',
-	version='1.0.0',
+	version='1.0.1',
 	author='TEONITE',
 	author_email='robert@teonite.com',
 	packages=['deployment', 'deployment.conf'],
