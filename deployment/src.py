@@ -163,7 +163,21 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 #	if len(branch)==0:
 #		pretty_print('Branch not selected. Archiving current one.', 'info')
 	pretty_print('Archiving current branch.', 'info')
-	repo.archive(open("%s" % file,'w'))
+	compression = file.split('.')
+	f = open("%s" % file,'wb')
+	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
+		repo.archive(f, format="tar.gz")
+	elif compression[-1] == "tar":
+		repo.archive(f)
+	# elif compression[-1] == "bz2" and compression[-2] == "tar":
+	# 	repo.archive(f, format="tar.bz2")
+	else:
+		pretty_print("Unknown file format. Supported: tar, tar.gz, tgz", "error")
+		f.close()
+		raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
+
+	f.close()
+
 #	else:
 #		pretty_print('Archiving branch %s' % branch, 'info')
 #		repo.archive(open("%s" % file,'w'), branch)
@@ -279,7 +293,17 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 
 	#with cd(file_dir):
 	pretty_print('Extracting files', 'info')
-	run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+
+	compression = file.split('.')
+	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
+		run('tar xvfz %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+	# elif compression[-1] == "bz2" and compression[-2] == "tar":
+	# 	run('tar xvfj %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+	elif compression[-1] == "tar":
+		run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+	else:
+		pretty_print("Unknown file format. Supported: tar, tar.gz, tgz", "error")
+
 
 	pretty_print("[+] Remote extract finished", 'info')
 
