@@ -15,7 +15,7 @@ from misc import *
 def validate_config(config_f):
 	config = prepare_config(config_f, 'Restart')
 
-	pretty_print("Validating restart config section", 'info')
+	pretty_print("Validating restart config section", 'debug')
 
 	#SUPERVISOR_ADDRESS, SUPERVISOR_PORT, SUPERVISOR_PASSWORD, SUPERVISOR_APP_NAME
 	validate_entry(config, 'supervisor_host', required=True, default=None)
@@ -24,7 +24,7 @@ def validate_config(config_f):
 	validate_entry(config, 'supervisor_app_name', required=True, default=None)
 	validate_entry(config, 'supervisor_user', required=True, default=None)
 
-	pretty_print('Config is valid!', 'info')
+	pretty_print('Config is valid!', 'debug')
 
 	return config
 

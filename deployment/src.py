@@ -27,7 +27,7 @@ from misc import *
 def validate_config(config_f):
 	config = prepare_config(config_f, 'Source')
 
-	pretty_print("Validating source config section", 'info')
+	pretty_print("Validating source config section", 'debug')
 
 	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
 	validate_entry(config, 'git_repo', required=True, default=None)
@@ -69,7 +69,7 @@ def validate_config(config_f):
 	#		PRE_DEPLOY = echo "START"
 	validate_entry(config, 'pre_deploy', required=False, default='')
 
-	pretty_print('Config is valid!', 'info')
+	pretty_print('Config is valid!', 'debug')
 
 	return config
 

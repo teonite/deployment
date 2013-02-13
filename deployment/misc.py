@@ -89,7 +89,7 @@ def _config_section_map(Config, section):
 	return dict1
 
 def _parse_config(filename, section):
-	pretty_print("Parsing config file: %s" % filename, 'info')
+	pretty_print("Parsing config file: %s" % filename, 'debug')
 	try:
 		config = ConfigParser.ConfigParser()
 		config.read(filename)

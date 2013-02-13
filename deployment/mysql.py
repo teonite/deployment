@@ -21,7 +21,7 @@ from misc import *
 def validate_config(config_f):
 	config = prepare_config(config_f, 'Migrate_MySQL')
 
-	pretty_print("Validating mysql config section", 'info')
+	pretty_print("Validating mysql config section", 'debug')
 	#	MYSQL_DUMPFILE = temp.sql
 	validate_entry(config, 'mysql_dumpfile', required=False, default='dump.sql')
 	#	MYSQL_SHELL_USER = kmk
@@ -40,7 +40,7 @@ def validate_config(config_f):
 	#	MYSQL_REMOTE_DIR = test
 	validate_entry(config, 'mysql_remote_dir', required=True, default=None)
 
-	pretty_print('Config is valid!', 'info')
+	pretty_print('Config is valid!', 'debug')
 
 	return config
 
