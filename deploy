@@ -72,6 +72,7 @@ def usage():
 	print('	- mysql_db_dump - dump database to selected file')
 	print('	- mysql_db_restore - restore database from file')
 	print('	- mysql_dump_remove - remove dump file from remote host')
+	print('	- restart_supervisor - restart process in Supervisor')
 	print(' ')
 	print('Parameters: (optional)')
 	print('	-c, --config <filename> - if not selected, config.ini is selected')
@@ -91,6 +92,7 @@ if __name__ == "__main__":
 
 	from deployment.mysql import *
 	from deployment.src import *
+	from deployment.supervisor import restart_supervisor
 
 	try:
 		opts, args = getopt.getopt(sys.argv[2:], "c:", ["config="])
@@ -182,6 +184,8 @@ if __name__ == "__main__":
 			mysql_db_restore(config_f)
 		elif s == 'mysql_dump_remove':
 			mysql_dump_remove(config_f)
+		elif s == 'restart_supervisor':
+			restart_supervisor(config_f)
 		else:
 			usage()
 	except:
