@@ -49,7 +49,7 @@ def usage():
 	from deployment.misc import version
 	print(' ')
 	print('				TEONITE deployment and database migration tool')
-	print('							version %s' % version)
+	print('						version %s' % version)
 	print('					Copyright (C) 2012-2013 TEONITE')
 	print(' ')
 	print('Usage:')

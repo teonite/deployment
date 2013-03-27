@@ -25,7 +25,7 @@ from misc import *
 #progress = RemoteProgress()
 
 def validate_config(config_f):
-	config = prepare_config(config_f, 'Source')
+	config = prepare_config(config_f, 'source')
 
 	pretty_print("Validating source config section", 'debug')
 
@@ -33,10 +33,8 @@ def validate_config(config_f):
 	validate_entry(config, 'git_repo', required=True, default=None)
 	#		GIT_BRANCH = master
 	validate_entry(config, 'git_branch', required=True, default=None)
-	#		GIT_REPO_LOCAL = test
-	validate_entry(config, 'git_repo_local', required=False, default='')
 	#		LOCAL_DIR = test
-	validate_entry(config, 'local_dir', required=False, default=os.getcwd())
+	validate_entry(config, 'local', required=False, default=os.getcwd())
 	config['local_dir'] = os.path.expanduser(config['local_dir'])
 	#		FILE_NAME = src.tar
 	validate_entry(config, 'file_name', required=False, default='src.tar')
@@ -74,26 +72,26 @@ def validate_config(config_f):
 	return config
 
 
-def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
+def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
-	pretty_print('[+] Repository clone start: %s' % dir, 'info')
+	pretty_print('[+] Repository clone start: %s' % directory, 'info')
 
-	if len(dir) == 0:
+	if len(directory) == 0:
 		pretty_print('Directory not selected, assuming current one.', 'info')
-		dir = os.getcwd()
+		directory = os.getcwd()
 
-	if os.path.isdir(dir):
+	if os.path.isdir(directory):
 		pretty_print('Directory found.', 'info')
 #		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 	else:
 		try:
 			pretty_print('Directory not found, creating.', 'info')
-			os.mkdir(dir)
+			os.mkdir(directory)
 		except:
-			raise Exception('Cannot create directory %s, please create the folder manually' % dir)
+			raise Exception('Cannot create directory %s, please create the folder manually' % directory)
 
 	old_dir = os.getcwd()
-	os.chdir(dir)
+	os.chdir(directory)
 
 	try:
 		if not os.path.isdir("%s/.git" % date): #repo = Repo(dir)
@@ -138,13 +136,13 @@ def _src_clone(dir='', branch = '', repo = '', date=datetime.now().strftime("%Y%
 
 	pretty_print('[+] Repository clone finished', 'info')
 
-def src_clone(config_f = 'config.ini', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def src_clone(config_f = 'config.json', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = validate_config(config_f)
 
 	if len(folder):
 		_src_clone(folder, config['git_branch'], config['git_repo'], date)
 	else:
-		_src_clone(config['local_dir'], config['git_branch'], config['git_repo'], date)
+		_src_clone(config['local'], config['git']['branch'], config['git']['repo'], date)
 
 def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
@@ -187,7 +185,7 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 	os.chdir(old_dir)
 	pretty_print('[+] Archive prepare finished', 'info')
 
-def src_prepare(config_f = 'config.ini', folder = '', date = ''):
+def src_prepare(config_f = 'config.json', folder = '', date = ''):
 	config = validate_config(config_f)
 
 	if not len(folder):
@@ -230,7 +228,7 @@ def _src_upload(file, user, host, dir):
 	pretty_print("[+] File upload finished", 'info')
 	os.chdir(old_dir)
 
-def src_upload(config_f = 'config.ini'):
+def src_upload(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
@@ -268,7 +266,7 @@ def _src_remote_test (user, host):
 	run('exit 0')
 	pretty_print('[+] Remote test finished', 'info')
 
-def src_remote_test(config_f = 'config.ini'):
+def src_remote_test(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_src_remote_test(config['remote_user'], config['remote_host'])
@@ -307,7 +305,7 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 
 	pretty_print("[+] Remote extract finished", 'info')
 
-def src_remote_extract(config_f = 'config.ini', subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def src_remote_extract(config_f = 'config.json', subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	config = validate_config(config_f)
 
 	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
@@ -333,7 +331,7 @@ def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 		else:
 			pretty_print('File does not exists: %s, ommiting' % os.path.join(src_dir, object['src']), 'error')
 
-def src_remote_config(config_f = 'config.ini'):
+def src_remote_config(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], 'current'), config['remote_user'], config['remote_host'])
@@ -359,7 +357,7 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 
 	pretty_print("[+] Remote deployment finished", 'info')
 
-def src_remote_deploy(config_f = 'config.ini', directory = ''):
+def src_remote_deploy(config_f = 'config.json', directory = ''):
 	config = validate_config(config_f)
 
 	if not len(directory):
@@ -384,7 +382,7 @@ def	_src_remote_rollback(dir, host, user):
 		run('mv previous current')
 	pretty_print("[+] Remote rollback finished", 'info')
 
-def src_remote_rollback(config_f = 'config.ini'):
+def src_remote_rollback(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
@@ -404,7 +402,7 @@ def _src_pre_deploy(config):
 
 	pretty_print("[+] Remote pre-deploy command finished", 'info')
 
-def src_pre_deploy(config_f='config.ini'):
+def src_pre_deploy(config_f='config.json'):
 	config = validate_config(config_f)
 
 	_src_pre_deploy(config)
@@ -424,7 +422,7 @@ def _src_post_deploy(config):
 
 	pretty_print("[+] Remote post-deploy command finished", 'info')
 
-def src_post_deploy(config_f='config.ini'):
+def src_post_deploy(config_f='config.json'):
 	config = validate_config(config_f)
 
 	_src_post_deploy(config)
@@ -466,7 +464,7 @@ def _deploy(config, subdir = ''):
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 
-def deploy(config_f = 'config.ini', subfolder = ''):
+def deploy(config_f = 'config.json', subfolder = ''):
 	config = validate_config(config_f)
 
 	pretty_print("Deploy subfolder: %s" % subfolder)

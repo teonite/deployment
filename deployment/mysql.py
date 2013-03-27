@@ -59,7 +59,7 @@ def _mysql_dump_remove(filename,  host, host_user):
 
 	pretty_print("[+] Dump remove finished.", 'info')
 
-def mysql_dump_remove(config_f = 'config.ini'):
+def mysql_dump_remove(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_mysql_dump_remove(config['mysql_dumpfile'], config['mysql_shell_host'], config['mysql_shell_user'])
@@ -76,7 +76,7 @@ def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_us
 		run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL dump finished.', 'info')
 
-def mysql_db_dump(config_f = 'config.ini'):
+def mysql_db_dump(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_mysql_db_dump(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
@@ -94,7 +94,7 @@ def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host
 		run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
 	pretty_print('[+] MySQL restore finished.', 'info')
 
-def mysql_db_restore(config_f = 'config.ini'):
+def mysql_db_restore(config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	_mysql_db_restore(config['mysql_dumpfile'], config['mysql_database'], config['mysql_host'], config['mysql_user'], config['mysql_password'], config['mysql_shell_host'], config['mysql_shell_user'])
@@ -118,7 +118,7 @@ def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpf
 
 	pretty_print('[+] MySQL clone finished.', 'info')
 
-def mysql_db_clone(config_f = 'config.ini', database = ''):
+def mysql_db_clone(config_f = 'config.json', database = ''):
 	config = validate_config(config_f)
 
 	if not len(database):
@@ -165,7 +165,7 @@ def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 		raise Exception
 
-def mysql_db_migrate(migration_dir = None, config_f = 'config.ini'):
+def mysql_db_migrate(migration_dir = None, config_f = 'config.json'):
 	config = validate_config(config_f)
 
 	if not migration_dir:
@@ -194,7 +194,7 @@ def	_db_migrate(config, migration_dir=None):
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
-def db_migrate(config_f = 'config.ini', migration_dir = None):
+def db_migrate(config_f = 'config.json', migration_dir = None):
 	config = validate_config(config_f)
 
 	_db_migrate(config, migration_dir)

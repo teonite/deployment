@@ -13,7 +13,7 @@ from fabric.state import env
 from fabric.api import run
 
 import logging, logging.config
-import ConfigParser
+import json
 import traceback
 
 version = "1.0.1"
@@ -75,34 +75,19 @@ def _prefix():
 	return
 #return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
 
-def _config_section_map(Config, section):
-	pretty_print('Reading section %s' % section)
-	dict1 = {}
-	options = Config.options(section)
-	for option in options:
-		try:
-			dict1[option] = Config.get(section, option)
-			if dict1[option] == -1:
-				pretty_print("skip: %s" % option)
-		except:
-			pretty_print("exception on %s!" % option)
-			dict1[option] = None
-	pretty_print('Reading finished. Returning.')
-	return dict1
-
 def _parse_config(filename, section):
 	pretty_print("Parsing config file: %s" % filename, 'debug')
 	try:
-		config = ConfigParser.ConfigParser()
-		config.read(filename)
-		conf = _config_section_map(config, section)
+		f = open(filename, 'r')
+		conf = json.load(f)
+		pretty_print(conf[section], 'debug')
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
 		conf = {}
 
-	return conf
+	return conf[section]
 
 def validate_entry(config, entry, required=True, default=None):
 	try:
@@ -136,7 +121,7 @@ def prepare_config(config_f = None, section = None):
 	config = None
 	try:
 		if not config_f:
-			config = _parse_config("config.ini", section)
+			config = _parse_config("config.json", section)
 		else:
 			config = _parse_config(config_f, section)
 
