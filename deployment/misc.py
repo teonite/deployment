@@ -16,6 +16,8 @@ import logging, logging.config
 import ConfigParser
 import traceback
 
+version = "1.0.1"
+
 _log = None
 
 def _setupLogging():

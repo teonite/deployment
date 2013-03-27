@@ -46,9 +46,11 @@ def init():
 		print ('%s found, omitting.' % config_path)
 
 def usage():
+	from deployment.misc import version
 	print(' ')
 	print('				TEONITE deployment and database migration tool')
-	print('					Copyright (C) 2012 TEONITE')
+	print('							version %s' % version)
+	print('					Copyright (C) 2012-2013 TEONITE')
 	print(' ')
 	print('Usage:')
 	print('	python %s <command> <parameter>' % os.path.basename(main.__file__))

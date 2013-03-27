@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages, Command
+from deployment.misc import version
 
 readme = []
 with open('README.rst', 'r') as fh:
@@ -6,7 +7,7 @@ with open('README.rst', 'r') as fh:
 
 setup(
 	name='deployment',
-	version='1.0.1',
+	version=version,
 	author='TEONITE',
 	author_email='robert@teonite.com',
 	packages=['deployment', 'deployment.conf'],
