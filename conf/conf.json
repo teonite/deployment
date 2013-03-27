@@ -1,0 +1,69 @@
+{
+    "source": {
+        "git": {
+            "repo": "name",
+            "branch": "name"
+        },
+        "local": "path",
+        "file": "path to file.tar.gz"
+    },
+    "remote": {
+        "host": "name",
+        "user": "user",
+        "port": "opcjonalny port",
+        "dir": "dir do uploadnięcia źródeł",
+        "clean": true
+    },
+    "config": {
+        "nazwa_przykładowa": {
+            "src": "path",
+            "dst": "path"
+        },
+        "supervisor": {
+            "src": "path",
+            "dst": "path"
+        },
+        "localsettings": {
+            "src": "path",
+            "dst": "path"
+        }
+    },
+    "deploy": {
+        "dir": "remote dir",
+        "pre": [
+            "script1",
+            "scritp2"
+        ],
+        "post": [
+            "script1",
+            "scritp2"
+        ]
+    },
+
+   "mysql" : {
+       "server" : {
+           "host" : "localhost",
+           "user" : "root",
+           "password" : "test",
+           "port" : 3306,
+           "database" : "test"
+       },
+       "shell" : {
+           "dumpfile" : "temp.sql",
+           "user" : "kkrzysztofik",
+           "host" : "192.168.56.101",
+           "migration_dir" : "test"
+       }
+   },
+
+    "supervisor" : {
+        "host" : "192.168.56.101",
+        "port" : 9004,
+        "user" : "admin",
+        "password" : "test",
+        "apps" : [
+            "test1",
+            "test2"
+        ]
+    }
+}
