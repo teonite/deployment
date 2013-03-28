@@ -61,15 +61,27 @@ def validate_config(config, section):
 		# 			  "clean": true
 		# 		  },
 
-		pass
-	# validate_entry(config, 'git_repo', required=True, default=None)
-	# validate_entry(config, 'git_branch', required=True, default=None)
-	# validate_entry(config, 'local', required=False, default=os.getcwd())
-	# config['local_dir'] = os.path.expanduser(config['local_dir'])
-	#
-	# validate_entry(config, 'file_name', required=False, default='src.tar')
-	# config['file_name'] = os.path.expanduser(config['file_name'])
-	#
+		if not 'remote' in config:
+			raise NotConfiguredError("Remote section does not exists")
+
+		if not 'host' in config['remote'] or not len(config['remote']['host']):
+			raise NotConfiguredError("Host not set.")
+
+		if not 'user' in config['remote'] or not len(config['remote']['user']):
+			raise NotConfiguredError("User not set.")
+
+		if not 'port' in config['remote'] :
+			pretty_print("Port not set. Using 22", 'info')
+			config['remote']['port'] = 22
+
+		if not 'dir' in config['remote'] :
+			pretty_print("Dir not set.", 'info')
+			config['remote']['dir'] = ""
+
+		if not 'clean' in config['remote'] :
+			pretty_print("Clean not set. No clean by default", 'info')
+			config['remote']['clean'] = False
+
 	# validate_entry(config, 'upload_dir', required=False, default='')
 	# validate_entry(config, 'remote_host', required=True, default=None)
 	# validate_entry(config, 'remote_user', required=True, default=None)
