@@ -112,22 +112,23 @@ def _parse_config(filename, section=None):
 # 			pretty_print('%s not set. Please use correct one.' % entry, 'error')
 # 			raise NotConfiguredError('%s not set.' % entry)
 
+def prepare_config(config_f = None, section = None):
+	config = None
+	try:
+		if not config_f:
+			config = _parse_config("config.json")
+		else:
+			config = _parse_config(config_f)
+
+	except:
+		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+
+	return config
+
 def list_dir(dir_=None):
 	"""returns a list of files in a directory (dir_) as absolute paths"""
 	#dir_ = dir_ or env.cwd
 	string_ = run("for i in *; do echo $i; done")
 	files = string_.replace("\r","").split("\n")
 	return files
-
-def prepare_config(config_f = None, section = None):
-	config = None
-	try:
-		if not config_f:
-			config = _parse_config("config.json", section)
-		else:
-			config = _parse_config(config_f, section)
-
-	except:
-		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
-	return config

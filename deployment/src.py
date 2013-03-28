@@ -24,28 +24,44 @@ from misc import *
 
 #progress = RemoteProgress()
 
-def validate_config(config_f, section):
-	config = prepare_config(config_f)
-
-	pretty_print("Validating source config section", 'debug')
+def validate_config(config, section):
+	pretty_print("Validating %s config section" % section, 'debug')
 
 	if section == 'source' :
-		if not len(config['source']['git']['repo']):
-			raise Exception("Repository not set")
-		if not len(config['source']['git']['branch']):
+		if not 'source' in config:
+			raise NotConfiguredError("Source section does not exists")
+
+		if not 'git' in config['source']:
+			raise NotConfiguredError("Section \"git\" does not exists")
+
+		if not 'repo' in config['source']['git'] or not len(config['source']['git']['repo']):
+			raise NotConfiguredError("Repository not set")
+
+		if not 'branch' in config['source']['git'] or not len(config['source']['git']['branch']):
 			pretty_print("Repository branch not set. Clone from \"master\"", 'info')
 			config['source']['git']['branch'] = 'master'
 
-		if not len(config['source']['local']):
+		if not 'local' in config['source'] or not len(config['source']['local']):
 			pretty_print("Local directory not set. Use current working directory", 'info')
 			config['source']['local'] = os.getcwd()
 		config['source']['local'] = os.path.expanduser(config['source']['local'])
 
-		if not len(config['source']['file']):
+		if not 'file' in config['source'] or not len(config['source']['file']):
 			pretty_print("Archive file not set, using src.tar", 'info')
 			config['source']['file'] = 'src.tar'
 
 		config['source']['file'] = os.path.expanduser(config['source']['file'])
+
+	elif section == 'remote' :
+		# "remote": {
+		# 			  "host": "192.168.56.101",
+		# 			  "user": "kkrzysztofik",
+		# 			  "port": 22,
+		# 			  "dir": "~",
+		# 			  "clean": true
+		# 		  },
+
+		pass
 	# validate_entry(config, 'git_repo', required=True, default=None)
 	# validate_entry(config, 'git_branch', required=True, default=None)
 	# validate_entry(config, 'local', required=False, default=os.getcwd())
@@ -119,7 +135,8 @@ def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftim
 	pretty_print('[+] Repository clone finished', 'info')
 
 def src_clone(config_f = 'config.json', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
-	config = validate_config(config_f, 'source')
+	config = prepare_config(config_f)
+	config = validate_config(config, 'source')
 
 	if len(folder):
 		_src_clone(folder, config['source']['git']['branch'], config['source']['git']['repo'], date)
@@ -160,7 +177,8 @@ def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime
 	pretty_print('[+] Archive prepare finished', 'info')
 
 def src_prepare(config_f = 'config.json', folder = '', date = ''):
-	config = validate_config(config_f, 'source')
+	config = prepare_config(config_f)
+	config = validate_config(config, 'source')
 
 	if not len(folder):
 		folder = config['source']['local']
