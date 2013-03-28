@@ -142,6 +142,7 @@ def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime
 	pretty_print('Archiving current branch.', 'info')
 
 	compression = file.split('.')
+	pretty_print(os.getcwd())
 	f = open("%s" % file,'wb')
 
 	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
@@ -162,7 +163,7 @@ def src_prepare(config_f = 'config.json', folder = '', date = ''):
 	config = validate_config(config_f, 'source')
 
 	if not len(folder):
-		folder = config['local_dir']
+		folder = config['source']['local']
 
 	folder = os.path.expanduser(folder)
 
@@ -178,7 +179,7 @@ def src_prepare(config_f = 'config.json', folder = '', date = ''):
 		date = max(all_subdirs, key=os.path.getmtime)
 
 	pretty_print("Prepare completed, move to _src_prepare.")
-	_src_prepare(config['file_name'], folder, config['git_branch'], date)
+	_src_prepare(config['source']['file'], folder, config['source']['git']['branch'], date)
 
 def _src_upload(to_upload, user, host, directory):
 	env.host = host
