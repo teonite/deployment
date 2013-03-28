@@ -53,14 +53,6 @@ def validate_config(config, section):
 		config['source']['file'] = os.path.expanduser(config['source']['file'])
 
 	elif section == 'remote' :
-		# "remote": {
-		# 			  "host": "192.168.56.101",
-		# 			  "user": "kkrzysztofik",
-		# 			  "port": 22,
-		# 			  "dir": "~",
-		# 			  "clean": true
-		# 		  },
-
 		if not 'remote' in config:
 			raise NotConfiguredError("Remote section does not exists")
 
@@ -232,9 +224,11 @@ def _src_upload(to_upload, user, host, directory):
 	os.chdir(old_dir)
 
 def src_upload(config_f = 'config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'source')
+	config = validate_config(config, 'remote')
 
-	_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
+	_src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'], config['remote']['host'], config['remote']['dir'])
 
 def _src_clean(directory, file, to_delete):
 	pretty_print('[+] Starting src_clean.', 'info')
@@ -264,9 +258,10 @@ def _src_remote_test (user, host):
 	pretty_print('[+] Remote test finished', 'info')
 
 def src_remote_test(config_f = 'config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
 
-	_src_remote_test(config['remote_user'], config['remote_host'])
+	_src_remote_test(config['remote']['user'], config['remote']['host'])
 
 def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	pretty_print("[+] Starting remote extract", 'info')
@@ -303,10 +298,12 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	pretty_print("[+] Remote extract finished", 'info')
 
 def src_remote_extract(config_f = 'config.json', subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'source')
+	config = validate_config(config, 'remote')
 
 	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
-	_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
+	_src_remote_extract(config['source']['file'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
 
 def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 	pretty_print("[+] Starting remote config copy", 'info')
