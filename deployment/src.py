@@ -24,53 +24,48 @@ from misc import *
 
 #progress = RemoteProgress()
 
-def validate_config(config_f):
-	config = prepare_config(config_f, 'source')
+def validate_config(config_f, section):
+	config = prepare_config(config_f)
 
 	pretty_print("Validating source config section", 'debug')
 
-	#		GIT_REPO = gitolite@git.teonite.net:TEONITE/sample.git
-	validate_entry(config, 'git_repo', required=True, default=None)
-	#		GIT_BRANCH = master
-	validate_entry(config, 'git_branch', required=True, default=None)
-	#		LOCAL_DIR = test
-	validate_entry(config, 'local', required=False, default=os.getcwd())
-	config['local_dir'] = os.path.expanduser(config['local_dir'])
-	#		FILE_NAME = src.tar
-	validate_entry(config, 'file_name', required=False, default='src.tar')
-	config['file_name'] = os.path.expanduser(config['file_name'])
+	if section == 'source' :
+		if not len(config['source']['git']['repo']):
+			raise Exception("Repository not set")
+		if not len(config['source']['git']['branch']):
+			pretty_print("Repository branch not set. Clone from \"master\"", 'info')
+			config['source']['git']['branch'] = 'master'
 
-	#		UPLOAD_DIR = ~
-	validate_entry(config, 'upload_dir', required=False, default='')
+		if not len(config['source']['local']):
+			pretty_print("Local directory not set. Use current working directory", 'info')
+			config['source']['local'] = os.getcwd()
+		config['source']['local'] = os.path.expanduser(config['source']['local'])
 
-	#		EXTRACT_DIR = extract
-	#		_validate_entry(config, 'extract_dir', required=True, default=None)
+		if not len(config['source']['file']):
+			pretty_print("Archive file not set, using src.tar", 'info')
+			config['source']['file'] = 'src.tar'
 
-	#		REMOTE_HOST = 192.168.56.101
-	validate_entry(config, 'remote_host', required=True, default=None)
-
-	#		REMOTE_USER = kmk
-	validate_entry(config, 'remote_user', required=True, default=None)
-
-	#		DEPLOY_DIR = deploy
-	validate_entry(config, 'deploy_dir', required=True, default=None)
-
-	#		CONFIG_TO_COPY = [{"dest": "logger.conf", "src": "logger.conf.tpl"}]
-	validate_entry(config, 'config_to_copy', required=True, default=None)
-
-	# UPLOAD_CLEAN = False
-	validate_entry(config, 'upload_clean', required=False, default='False')
-
-	#		POST_DEPLOY = echo "DONE"
-	validate_entry(config, 'post_deploy', required=False, default='')
-
-	#		PRE_DEPLOY = echo "START"
-	validate_entry(config, 'pre_deploy', required=False, default='')
+		config['source']['file'] = os.path.expanduser(config['source']['file'])
+	# validate_entry(config, 'git_repo', required=True, default=None)
+	# validate_entry(config, 'git_branch', required=True, default=None)
+	# validate_entry(config, 'local', required=False, default=os.getcwd())
+	# config['local_dir'] = os.path.expanduser(config['local_dir'])
+	#
+	# validate_entry(config, 'file_name', required=False, default='src.tar')
+	# config['file_name'] = os.path.expanduser(config['file_name'])
+	#
+	# validate_entry(config, 'upload_dir', required=False, default='')
+	# validate_entry(config, 'remote_host', required=True, default=None)
+	# validate_entry(config, 'remote_user', required=True, default=None)
+	# validate_entry(config, 'deploy_dir', required=True, default=None)
+	# validate_entry(config, 'config_to_copy', required=True, default=None)
+	# validate_entry(config, 'upload_clean', required=False, default='False')
+	# validate_entry(config, 'post_deploy', required=False, default='')
+	# validate_entry(config, 'pre_deploy', required=False, default='')
 
 	pretty_print('Config is valid!', 'debug')
 
 	return config
-
 
 def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
@@ -100,19 +95,6 @@ def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftim
 		repo = Repo(date)
 
 		pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
-		#pretty_print('Clonning repo.', 'info')
-
-		#	_pretty_print('Fetching changes.')
-
-		#	origin = repo.remotes.origin
-		#	origin.fetch()
-		#
-		#	if len(branch) == 0:
-		#		_pretty_print('Branch not supplied, assuming current one.')
-		#		origin.pull()
-		#	else:
-		#		_pretty_print('Pulling from \'%s\' branch' % branch)
-		#origin.pull(branch)
 
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
@@ -137,19 +119,19 @@ def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftim
 	pretty_print('[+] Repository clone finished', 'info')
 
 def src_clone(config_f = 'config.json', folder = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
-	config = validate_config(config_f)
+	config = validate_config(config_f, 'source')
 
 	if len(folder):
-		_src_clone(folder, config['git_branch'], config['git_repo'], date)
+		_src_clone(folder, config['source']['git']['branch'], config['source']['git']['repo'], date)
 	else:
-		_src_clone(config['local'], config['git']['branch'], config['git']['repo'], date)
+		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], date)
 
-def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
 	env.host_string = 'localhost'
 	pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
 	old_dir = os.getcwd()
-	os.chdir(dir)
+	os.chdir(directory)
 
 	try:
 		repo = Repo(date)
@@ -157,18 +139,15 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 	except InvalidGitRepositoryError: #Repo doesn't exists
 		raise Exception('Repository not found. Please provide correct one.')
 
-
-#	if len(branch)==0:
-#		pretty_print('Branch not selected. Archiving current one.', 'info')
 	pretty_print('Archiving current branch.', 'info')
+
 	compression = file.split('.')
 	f = open("%s" % file,'wb')
+
 	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
 		repo.archive(f, format="tar.gz")
 	elif compression[-1] == "tar":
 		repo.archive(f)
-	# elif compression[-1] == "bz2" and compression[-2] == "tar":
-	# 	repo.archive(f, format="tar.bz2")
 	else:
 		pretty_print("Unknown file format. Supported: tar, tar.gz, tgz", "error")
 		f.close()
@@ -176,17 +155,11 @@ def _src_prepare(file, dir='', branch = '', date = datetime.now().strftime("%Y%m
 
 	f.close()
 
-#	else:
-#		pretty_print('Archiving branch %s' % branch, 'info')
-#		repo.archive(open("%s" % file,'w'), branch)
-
-#	except GitCommandError as ex:
-#		pretty_print('Something went wrong. Message: %s' % ex.__str__())
 	os.chdir(old_dir)
 	pretty_print('[+] Archive prepare finished', 'info')
 
 def src_prepare(config_f = 'config.json', folder = '', date = ''):
-	config = validate_config(config_f)
+	config = validate_config(config_f, 'source')
 
 	if not len(folder):
 		folder = config['local_dir']
@@ -207,24 +180,23 @@ def src_prepare(config_f = 'config.json', folder = '', date = ''):
 	pretty_print("Prepare completed, move to _src_prepare.")
 	_src_prepare(config['file_name'], folder, config['git_branch'], date)
 
-def _src_upload(file, user, host, dir):
+def _src_upload(to_upload, user, host, directory):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(user,host)
-#	env.use_ssh_config = True
-	pretty_print("[+] Starting file '%s' upload (to %s)" % (file, dir), 'info')
+
+	pretty_print("[+] Starting file '%s' upload (to %s)" % (to_upload, directory), 'info')
 
 	pretty_print('CWD: %s' % os.getcwd())
 	old_dir = os.getcwd()
-	#if len(os.path.dirname(file)):
-		#os.chdir(os.path.dirname(file))
-	if not files.exists(dir):
+
+	if not files.exists(directory):
 		pretty_print('Target directory not found, creating.','info')
-		run('mkdir -p %s' % dir)
+		run('mkdir -p %s' % directory)
 	else:
 		pretty_print('Target directory found, uploading.')
 
-	put(file, "%s" % os.path.join(dir, os.path.basename(file)))
+	put(to_upload, "%s" % os.path.join(directory, os.path.basename(to_upload)))
 	pretty_print("[+] File upload finished", 'info')
 	os.chdir(old_dir)
 
@@ -233,21 +205,15 @@ def src_upload(config_f = 'config.json'):
 
 	_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
 
-def _src_clean(dir, file, to_delete):
+def _src_clean(directory, file, to_delete):
 	pretty_print('[+] Starting src_clean.', 'info')
 	old_dir = os.getcwd()
-	os.chdir(dir)
+	os.chdir(directory)
 
 	if os.path.isfile(file):
 		pretty_print('File %s found, deleting' % file, 'info')
 		os.remove(file)
 
-#	regexp = re.compile(r'[0-9]{8}_[0-9]{6}$')
-#	f = []
-#	for (dirpath, dirnames, filenames) in os.walk(dir):
-#		f.extend(regexp.match(dirnames))
-#		break
-#	for dir in f:
 	if os.path.isdir(to_delete):
 		pretty_print('Directory %s found, deleting.' % to_delete, 'info')
 		shutil.rmtree(to_delete)

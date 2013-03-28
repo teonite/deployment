@@ -75,40 +75,42 @@ def _prefix():
 	return
 #return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
 
-def _parse_config(filename, section):
+def _parse_config(filename, section=None):
 	pretty_print("Parsing config file: %s" % filename, 'debug')
 	try:
 		f = open(filename, 'r')
 		conf = json.load(f)
-		pretty_print(conf[section], 'debug')
+		# pretty_print(conf[section], 'debug')
+
+		return conf
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
-		conf = {}
+		return {}
 
-	return conf[section]
+	# return conf[section]
 
-def validate_entry(config, entry, required=True, default=None):
-	try:
-		if not len(config[entry]):
-			if not required:
-				if not default:
-					raise Exception('Default must be set if required == False')
-				pretty_print('%s not set, assuming %s' % (entry, default), 'info')
-				config[entry] = default
-			else:
-				raise NotConfiguredError('%s not set.' % entry)
-		else:
-			pretty_print('%s provided: %s' % (entry, config[entry]), 'debug')
-
-	except:
-		if not required:
-			pretty_print('%s not set, assuming %s' % (entry, default), 'info')
-			config[entry] = default
-		else:
-			pretty_print('%s not set. Please use correct one.' % entry, 'error')
-			raise NotConfiguredError('%s not set.' % entry)
+# def validate_entry(config, entry, required=True, default=None):
+# 	try:
+# 		if not len(config[entry]):
+# 			if not required:
+# 				if not default:
+# 					raise Exception('Default must be set if required == False')
+# 				pretty_print('%s not set, assuming %s' % (entry, default), 'info')
+# 				config[entry] = default
+# 			else:
+# 				raise NotConfiguredError('%s not set.' % entry)
+# 		else:
+# 			pretty_print('%s provided: %s' % (entry, config[entry]), 'debug')
+#
+# 	except:
+# 		if not required:
+# 			pretty_print('%s not set, assuming %s' % (entry, default), 'info')
+# 			config[entry] = default
+# 		else:
+# 			pretty_print('%s not set. Please use correct one.' % entry, 'error')
+# 			raise NotConfiguredError('%s not set.' % entry)
 
 def list_dir(dir_=None):
 	"""returns a list of files in a directory (dir_) as absolute paths"""
