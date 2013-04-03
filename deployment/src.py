@@ -74,6 +74,30 @@ def validate_config(config, section):
 			pretty_print("Clean not set. No clean by default", 'info')
 			config['remote']['clean'] = False
 
+	elif section == 'config':
+		if not 'config' in config:
+			raise NotConfiguredError('No section "config" in config.')
+
+		if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+			raise NotConfiguredError('No directory selected in deploy section.')
+
+		if not 'pre' in config['deploy']:
+			pretty_print("No pre-deploy commmands", "info")
+			config['deploy']['pre'] = []
+
+		if not type(config['deploy']['pre']) == type(list()):
+			raise Exception("Wrong format of 'pre' section - should be list")
+
+		if not 'post' in config['deploy']:
+			pretty_print("No post-deploy commmands", "info")
+			config['deploy']['post'] = []
+
+		if not type(config['deploy']['post']) == type(list()):
+			raise Exception("Wrong format of 'post' section - should be list")
+
+	elif section == 'deploy':
+		if not 'deploy' in config:
+			raise NotConfiguredError('No section "deploy" in config.')
 	# validate_entry(config, 'upload_dir', required=False, default='')
 	# validate_entry(config, 'remote_host', required=True, default=None)
 	# validate_entry(config, 'remote_user', required=True, default=None)
@@ -305,7 +329,7 @@ def src_remote_extract(config_f = 'config.json', subfolder = datetime.now().strf
 	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
 	_src_remote_extract(config['source']['file'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
 
-def _src_remote_config(json_string, src_dir, dst_dir, user, host):
+def _src_remote_config(to_copy, user, host):
 	pretty_print("[+] Starting remote config copy", 'info')
 
 	env.host = host
@@ -313,22 +337,24 @@ def _src_remote_config(json_string, src_dir, dst_dir, user, host):
 	env.host_string = "%s@%s" %(user,host)
 	#	env.use_ssh_config = True
 
-	filelist = json.loads(json_string)
-	if not files.exists(dst_dir):
-		pretty_print('Target directory %s does not exists. Creating.' % dst_dir, 'info')
-		run('mkdir -p %s' %dst_dir)
+	for key, value in to_copy.iteritems():
+		(head,tail) = os.path.split(value['dst'])
+		if not files.exists(head):
+			pretty_print('Target directory %s does not exists. Creating.' % head, 'info')
+			run('mkdir -p %s' % head)
 
-	for object in filelist:
-		if files.exists(os.path.join(src_dir, object['src']), verbose=True):
-			pretty_print('Copying file %s' %object, 'info')
-			run('cp -rf %s %s' % (os.path.join(src_dir, object['src']), os.path.join(dst_dir, object['dest'])))
+		if files.exists(value['src'], verbose=True):
+			pretty_print('Copying %s' % key, 'info')
+			run('cp -rf %s %s' % (value['src'], value['dst']))
 		else:
-			pretty_print('File does not exists: %s, ommiting' % os.path.join(src_dir, object['src']), 'error')
+			pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
 
 def src_remote_config(config_f = 'config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'config')
+	config = validate_config(config, 'remote')
 
-	_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], 'current'), config['remote_user'], config['remote_host'])
+	_src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
 
 def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	pretty_print("[+] Starting remote deployment", 'info')
@@ -352,12 +378,14 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 	pretty_print("[+] Remote deployment finished", 'info')
 
 def src_remote_deploy(config_f = 'config.json', directory = ''):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
+	config = validate_config(config, 'deploy')
 
 	if not len(directory):
 		raise Exception("Source directory not provided.")
 
-	_src_remote_deploy(directory, config['deploy_dir'], config['remote_user'], config['remote_host'])
+	_src_remote_deploy(directory, config['deploy']['dir'], config['remote']['user'], config['remote']['host'])
 
 def	_src_remote_rollback(dir, host, user):
 	pretty_print("[+] Starting remote rollback", 'info')
@@ -377,49 +405,58 @@ def	_src_remote_rollback(dir, host, user):
 	pretty_print("[+] Remote rollback finished", 'info')
 
 def src_remote_rollback(config_f = 'config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
+	config = validate_config(config, 'deploy')
 
-	_src_remote_rollback(config['deploy_dir'], config['remote_host'], config['remote_user'])
+	_src_remote_rollback(config['deploy']['dir'], config['remote']['host'], config['remote']['user'])
 
-def _src_pre_deploy(config):
-	env.host = config['remote_host']
-	env.user = config['remote_user']
+def _src_pre_deploy(command_list, host, user):
+	env.host = host
+	env.user = user
 	env.host_string = "%s@%s" %(env.user,env.host)
 
-	pretty_print("[+] Starting remote pre-deploy command", 'info')
+	pretty_print("[+] Starting remote pre-deploy commands", 'info')
 
-	if not len(config['pre_deploy']):
-		raise Exception('Pre_deploy command not provided')
+	if not len(command_list):
+		raise Exception('Pre_deploy commands not provided')
 
 	_src_remote_test(env.user, env.host)
-	run(config['pre_deploy'])
+	for i in command_list:
+		run(i)
 
 	pretty_print("[+] Remote pre-deploy command finished", 'info')
 
 def src_pre_deploy(config_f='config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
+	config = validate_config(config, 'deploy')
 
-	_src_pre_deploy(config)
+	_src_pre_deploy(config['deploy']['pre'], config['remote']['host'], config['remote']['user'])
 
-def _src_post_deploy(config):
-	env.host = config['remote_host']
-	env.user = config['remote_user']
+def _src_post_deploy(command_list, host, user):
+	env.host = host
+	env.user = user
 	env.host_string = "%s@%s" %(env.user,env.host)
 
-	pretty_print("[+] Starting remote post-deploy command", 'info')
+	pretty_print("[+] Starting remote post-deploy commands", 'info')
 
-	if not len(config['post_deploy']):
-		raise Exception('Post_deploy command not provided')
+	if not len(command_list):
+		raise Exception('Post_deploy commands not provided')
 
 	_src_remote_test(env.user, env.host)
-	run(config['post_deploy'])
+	for i in command_list:
+		run(i)
 
 	pretty_print("[+] Remote post-deploy command finished", 'info')
 
 def src_post_deploy(config_f='config.json'):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
+	config = validate_config(config, 'deploy')
 
-	_src_post_deploy(config)
+	_src_post_deploy(config['deploy']['post'], config['remote']['host'], config['remote']['user'])
+
 
 def _deploy(config, subdir = ''):
 	pretty_print("[+] Starting deployment.", 'info')
