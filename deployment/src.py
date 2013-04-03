@@ -411,7 +411,7 @@ def src_remote_rollback(config_f = 'config.json'):
 
 	_src_remote_rollback(config['deploy']['dir'], config['remote']['host'], config['remote']['user'])
 
-def _src_pre_deploy(command_list, host, user):
+def _src_pre_deploy(command_list, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(env.user,env.host)
@@ -432,9 +432,9 @@ def src_pre_deploy(config_f='config.json'):
 	config = validate_config(config, 'remote')
 	config = validate_config(config, 'deploy')
 
-	_src_pre_deploy(config['deploy']['pre'], config['remote']['host'], config['remote']['user'])
+	_src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
 
-def _src_post_deploy(command_list, host, user):
+def _src_post_deploy(command_list, user, host):
 	env.host = host
 	env.user = user
 	env.host_string = "%s@%s" %(env.user,env.host)
@@ -455,7 +455,7 @@ def src_post_deploy(config_f='config.json'):
 	config = validate_config(config, 'remote')
 	config = validate_config(config, 'deploy')
 
-	_src_post_deploy(config['deploy']['post'], config['remote']['host'], config['remote']['user'])
+	_src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
 
 
 def _deploy(config, subdir = ''):
@@ -469,25 +469,25 @@ def _deploy(config, subdir = ''):
 
 		if len(subdir):
 			repo = subdir
-		else:
-			if len(config['git_repo_local']):
-				repo = config['git_repo_local']
-			else:
-				repo = date
+		# else:
+		# 	if len(config['source']['local']):
+		# 		repo = config['source']['local']
+		# 	else:
+		# 		repo = date
 
-		_src_remote_test(config['remote_user'], config['remote_host'])
-		_src_pre_deploy(config)
-		_src_clone(config['local_dir'], config['git_branch'], config['git_repo'], repo)
-		_src_prepare(config['file_name'], config['local_dir'], config['git_branch'], repo)
-		_src_upload(os.path.join(config['local_dir'], config['file_name']), config['remote_user'], config['remote_host'], config['upload_dir'])
-		_src_remote_extract(config['file_name'], config['upload_dir'], os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
-		_src_remote_deploy(os.path.join(config['deploy_dir'], date), config['deploy_dir'], config['remote_user'], config['remote_host'])
-		_src_remote_config(config['config_to_copy'], os.path.join(config['deploy_dir'], 'previous'), os.path.join(config['deploy_dir'], date), config['remote_user'], config['remote_host'])
-		_src_post_deploy(config)
+		_src_remote_test(config['remote']['user'], config['remote']['host'])
+		_src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
+		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], date)
+		_src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], date)
+		_src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'], config['remote']['host'], config['remote']['dir'])
+		_src_remote_extract(config['source']['file'], config['remote']['dir'], os.path.join(config['deploy']['dir'], date), config['remote']['user'], config['remote']['host'])
+		_src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'], config['remote']['user'], config['remote']['host'])
+		_src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
+		_src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
 
-		pretty_print('Cleaning flag: %s' % config['upload_clean'].lower())
-		if config['upload_clean'].lower() == 'true' or config['upload_clean'] == '1':
-			_src_clean(config['local_dir'], config['file_name'], date)
+		pretty_print('Cleaning flag: %s' % config['remote']['clean'])
+		if config['remote']['clean']:
+			_src_clean(config['source']['local'], config['source']['file'], date)
 		else:
 			pretty_print('Cleaning not selected, omitting.', 'info')
 		pretty_print("[+] Deployment finished.", 'info')
@@ -496,7 +496,11 @@ def _deploy(config, subdir = ''):
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
 
 def deploy(config_f = 'config.json', subfolder = ''):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config, 'remote')
+	config = validate_config(config, 'deploy')
+	config = validate_config(config, 'config')
+	config = validate_config(config, 'source')
 
 	pretty_print("Deploy subfolder: %s" % subfolder)
 
