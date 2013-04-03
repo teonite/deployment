@@ -2,3 +2,4 @@
 *.ini
 *.pyc
 .idea/*
+.DS_Store
