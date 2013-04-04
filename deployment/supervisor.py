@@ -12,44 +12,60 @@ import xmlrpclib
 from misc import *
 
 
-def validate_config(config_f):
-	config = prepare_config(config_f, 'Restart')
+def validate_config(config):
+	#config = prepare_config(config_f, 'Restart')
 
-	pretty_print("Validating restart config section", 'debug')
+	pretty_print("Validating supervisor config section", 'debug')
 
-	#SUPERVISOR_ADDRESS, SUPERVISOR_PORT, SUPERVISOR_PASSWORD, SUPERVISOR_APP_NAME
-	validate_entry(config, 'supervisor_host', required=True, default=None)
-	validate_entry(config, 'supervisor_port', required=True, default=None)
-	validate_entry(config, 'supervisor_password', required=True, default=None)
-	validate_entry(config, 'supervisor_app_name', required=True, default=None)
-	validate_entry(config, 'supervisor_user', required=True, default=None)
+	if not 'supervisor' in config:
+		raise NotConfiguredError("Supervisor section does not exists")
+
+	if not 'host' in config['supervisor'] or not len(config['supervisor']['host']):
+		raise NotConfiguredError("Host not set")
+
+	if not 'port' in config['supervisor']:
+		raise NotConfiguredError("Port not set")
+
+	if not 'user' in config['supervisor'] or not len(config['supervisor']['user']):
+		raise NotConfiguredError("User not set")
+
+	if not 'password' in config['supervisor'] or not len(config['supervisor']['password']):
+		raise NotConfiguredError("Password not set")
+
+	if not 'apps' in config['supervisor']:
+		raise NotConfiguredError("Apps not set")
+
+	if not type(config['supervisor']['apps']) == type(list()):
+		raise Exception("Wrong format of 'apps' section - should be list")
 
 	pretty_print('Config is valid!', 'debug')
 
 	return config
 
 def restart_supervisor(config_f):
-	config = validate_config(config_f)
+	config = prepare_config(config_f)
+	config = validate_config(config)
 
 	env.host_string = 'localhost'
 	pretty_print('[+] Supervisor restart procedure start', 'info')
 
-	server = xmlrpclib.Server('http://%s:%s@%s:%s/RPC2' % (config['supervisor_user'], config['supervisor_password'], config['supervisor_host'], config['supervisor_port']))
+	server = xmlrpclib.Server('http://%s:%s@%s:%i/RPC2' % (config['supervisor']['user'], config['supervisor']['password'], config['supervisor']['host'], config['supervisor']['port']))
 
-	try:
-		env.host_string = config['supervisor_host']
-		pretty_print("Stopping process: %s" % config['supervisor_app_name'], "info")
-		server.supervisor.stopProcess(config['supervisor_app_name'])
-		pretty_print("Starting process: %s" % config['supervisor_app_name'], "info")
-		server.supervisor.startProcess(config['supervisor_app_name'])
-	except xmlrpclib.Fault as ex:
-		if ex.faultCode == 70:
-			pretty_print("Process not running, lets start him", 'info')
-			server.supervisor.startProcess(config['supervisor_app_name'])
-		else:
-			# pretty_print("Something went wrong: %i - %s" % (ex.faultCode, ex.faultString), 'error')
-			raise Exception("Something went wrong: %i - %s" % (ex.faultCode, ex.faultString))
-	except xmlrpclib.ProtocolError as prot:
-		raise Exception("ProtocolError: %s - %s " % (prot.errcode, prot.errmsg))
+	env.host_string = config['supervisor']['host']
+	for app in config['supervisor']['apps']:
+		try:
+			pretty_print("Stopping process: %s" % app, "info")
+			server.supervisor.stopProcess(app)
+			pretty_print("Starting process: %s" % app, "info")
+			server.supervisor.startProcess(app)
+		except xmlrpclib.Fault as ex:
+			if ex.faultCode == 70:
+				pretty_print("Process not running, lets start him", 'info')
+				server.supervisor.startProcess(app)
+			else:
+				# pretty_print("Something went wrong: %i - %s" % (ex.faultCode, ex.faultString), 'error')
+				raise Exception("Something went wrong: %i - %s" % (ex.faultCode, ex.faultString))
+		except xmlrpclib.ProtocolError as prot:
+			raise Exception("ProtocolError: %s - %s " % (prot.errcode, prot.errmsg))
 
 	pretty_print('[+] Supervisor restart procedure finished', 'info')
