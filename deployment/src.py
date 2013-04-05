@@ -234,7 +234,7 @@ def src_prepare(config_f = 'config.json', folder = '', date = ''):
 def _src_upload(to_upload, user, host, directory):
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 
 	pretty_print("[+] Starting file '%s' upload (to %s)" % (to_upload, directory), 'info')
 
@@ -279,7 +279,7 @@ def _src_remote_test (user, host):
 
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 	#	env.use_ssh_config = True
 
 	run('exit 0')
@@ -296,7 +296,7 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	pretty_print("Extracting to directory %s" % dest_dir)
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 	#	env.use_ssh_config = True
 
 	date = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -339,7 +339,7 @@ def _src_remote_config(to_copy, user, host):
 
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 	#	env.use_ssh_config = True
 
 	for key, value in to_copy.iteritems():
@@ -366,7 +366,7 @@ def	_src_remote_deploy(src_dir, dst_dir, user, host):
 
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 
 	path = env.cwd
 
@@ -397,7 +397,7 @@ def	_src_remote_rollback(dir, host, user):
 
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 	#	env.use_ssh_config = True
 
 	with cd(dir):
@@ -419,7 +419,7 @@ def src_remote_rollback(config_f = 'config.json'):
 def _src_pre_deploy(command_list, user, host):
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(env.user,env.host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 
 	pretty_print("[+] Starting remote pre-deploy commands", 'info')
 
@@ -442,7 +442,7 @@ def src_pre_deploy(config_f='config.json'):
 def _src_post_deploy(command_list, user, host):
 	env.host = host
 	env.user = user
-	env.host_string = "%s@%s" %(env.user,env.host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host, env.port)
 
 	pretty_print("[+] Starting remote post-deploy commands", 'info')
 
