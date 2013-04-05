@@ -97,32 +97,35 @@ if __name__ == "__main__":
 	from deployment.supervisor import restart_supervisor
 
 	try:
-		opts, args = getopt.getopt(sys.argv[2:], "c:", ["config="])
+		opts, args = getopt.gnu_getopt(sys.argv[1:], "c:", ["config="])
+
+		config_f = 'config.json'
+
+		for o, a in opts:
+			if o == "-c" or o == "--config":
+				config_f = a
+				pretty_print("-c found")
+				i = 0
+				while sys.argv[i] != o:
+					i += 1
+				sys.argv.pop(i)
+
+				i = 0
+				while sys.argv[i] != a:
+					i += 1
+				sys.argv.pop(i)
+
+			else:
+				pretty_print("unhandled option")
+
 	except getopt.GetoptError as err:
 		# print help information and exit:
 		pretty_print(str(err)) # will print something like "option -a not recognized"
 		usage()
 		sys.exit(2)
 
-	config_f = os.path.join(os.path.expanduser('~/.teonite/deployment'), 'config.json')
-	for o, a in opts:
-		if o == "-c" or o == "--config":
-			config_f = a
-
-			i = 0
-			while sys.argv[i] != o:
-				i += 1
-			sys.argv.pop(i)
-
-			i = 0
-			while sys.argv[i] != a:
-				i += 1
-			sys.argv.pop(i)
-
-		else:
-			pretty_print("unhandled option")
-
 	try:
+		pretty_print(sys.argv)
 		s = sys.argv[1]
 		if s == 'deploy':
 			if len(sys.argv) == 2:
