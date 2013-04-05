@@ -20,26 +20,47 @@ from misc import *
 
 def validate_config(config, section):
 
-	pretty_print("Validating mysql config section", 'debug')
+	pretty_print("Validating mysql config section: %s" % section, 'debug')
+
+	if not 'mysql' in config:
+		raise NotConfiguredError("MySQL section does not exists")
+
 	if section == "server":
-		pass
+		if not 'server' in config['mysql']:
+			raise NotConfiguredError("server section does not exists")
+
+		if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
+			raise NotConfiguredError("host not set")
+		if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
+			raise NotConfiguredError("user not set")
+		if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
+			raise NotConfiguredError("password not set")
+		if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
+			pretty_print("port not set, using default one", "info")
+			config['mysql']['server']['port'] = 3306
+		if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
+			raise NotConfiguredError("database not set")
+
 	elif section == "shell":
-		pass
-	# "mysql" : {
-	# 			  "server" : {
-	# 				  "host" : "localhost",
-	# 				  "user" : "root",
-	# 				  "password" : "test",
-	# 				  "port" : 3306,
-	# 				  "database" : "test"
-	# 			  },
-	# 			  "shell" : {
-	# 				  "dumpfile" : "temp.sql",
-	# 				  "user" : "kkrzysztofik",
-	# 				  "host" : "192.168.56.101",
-	# 				  "migration_dir" : "test"
-	# 			  }
-	# 		  },
+		if not 'shell' in config['mysql']:
+			raise NotConfiguredError("shell section does not exists")
+
+		if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+			raise NotConfiguredError("host not set")
+		if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+			raise NotConfiguredError("user not set")
+		if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+			pretty_print("port not set, using default one", "info")
+			config['mysql']['shell']['port'] = 22
+			env.port = config['mysql']['shell']['port']
+
+		if not 'migration_dir' in config['mysql']['shell'] or not len(config['mysql']['shell']['migration_dir']):
+			pretty_print("migration_dir not set, using default: ~/migrations")
+			config['mysql']['shell']['migration_dir'] = "~/migrations"
+
+		if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+			pretty_print("migration_dir not set, using default: dump.sql")
+			config['mysql']['shell']['migration_dir'] = "dump.sql"
 
 	pretty_print('Config is valid!', 'debug')
 
@@ -48,7 +69,7 @@ def validate_config(config, section):
 def _mysql_dump_remove(filename, host, host_user):
 	env.host = host
 	env.user = host_user
-	env.host_string = "%s@%s" %(host_user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
 	pretty_print("[+] Starting dump remove.", 'info')
 
@@ -69,7 +90,7 @@ def mysql_dump_remove(config_f = 'config.json'):
 def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	env.hosts = [host]
 	env.user = host_user
-	env.host_string = "%s@%s" %(host_user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
 	pretty_print('[+] Starting MySQL dump.', 'info')
 
@@ -88,7 +109,7 @@ def mysql_db_dump(config_f = 'config.json'):
 def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
 	env.hosts = [host]
 	env.user = host_user
-	env.host_string = "%s@%s" %(host_user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
 	pretty_print('[+] Starting MySQL restore.', 'info')
 
@@ -108,7 +129,7 @@ def mysql_db_restore(config_f = 'config.json'):
 def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpfile='temp.sql'):
 	env.host = host
 	env.user = host_user
-	env.host_string = "%s@%s" %(host_user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 	#	env.use_ssh_config = True
 
 	pretty_print('[+] Starting MySQL clone.', 'info')
@@ -138,7 +159,7 @@ def mysql_db_clone(config_f = 'config.json', database = ''):
 def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user, remote_dir):
 	env.host = host
 	env.user = host_user
-	env.host_string = "%s@%s" %(host_user,host)
+	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
 	pretty_print('[+] Starting MySQL migrate', 'info')
 #	env.use_ssh_config = True

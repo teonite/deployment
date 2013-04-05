@@ -53,6 +53,7 @@
            "dumpfile" : "temp.sql",
            "user" : "kkrzysztofik",
            "host" : "192.168.56.101",
+           "port" : 22,
            "migration_dir" : "test"
        }
    },
