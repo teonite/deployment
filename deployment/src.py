@@ -330,7 +330,8 @@ def src_remote_extract(config_f = 'config.json', subfolder = datetime.now().strf
 	config = validate_config(config, 'remote')
 
 	#_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
-	_src_remote_extract(config['source']['file'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
+	#_src_remote_extract(config['source']['file'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
+	_src_remote_extract(config['source']['file'], config['remote']['dir'], os.path.join(config['deploy']['dir'], subfolder), config['remote']['user'], config['remote']['host'])
 
 def _src_remote_config(to_copy, user, host):
 	pretty_print("[+] Starting remote config copy", 'info')
