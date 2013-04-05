@@ -88,7 +88,7 @@ def mysql_dump_remove(config_f = 'config.json'):
 	_mysql_dump_remove(config['mysql']['shell']['dumpfile'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
 
 def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	env.hosts = [host]
+	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
@@ -107,7 +107,7 @@ def mysql_db_dump(config_f = 'config.json'):
 	_mysql_db_dump(config['mysql']['shell']['dumpfile'], config['mysql']['server']['database'], config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
 
 def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	env.hosts = [host]
+	env.host = host
 	env.user = host_user
 	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
