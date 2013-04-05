@@ -18,7 +18,6 @@ from fabric.api import run, put, settings
 from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError
-import json
 
 from misc import *
 
@@ -40,6 +39,10 @@ def validate_config(config, section):
 		if not 'branch' in config['source']['git'] or not len(config['source']['git']['branch']):
 			pretty_print("Repository branch not set. Clone from \"master\"", 'info')
 			config['source']['git']['branch'] = 'master'
+
+		if not 'local' in config['source']['git']:
+			pretty_print("git local repo not set. Using current date as repo", 'info')
+			config['source']['git']['local'] = ""
 
 		if not 'local' in config['source'] or not len(config['source']['local']):
 			pretty_print("Local directory not set. Use current working directory", 'info')
@@ -469,16 +472,16 @@ def _deploy(config, subdir = ''):
 
 		if len(subdir):
 			repo = subdir
-		# else:
-		# 	if len(config['source']['local']):
-		# 		repo = config['source']['local']
-		# 	else:
-		# 		repo = date
+		else:
+			if len(config['source']['git']['local']):
+				repo = config['source']['git']['local']
+			else:
+				repo = date
 
 		_src_remote_test(config['remote']['user'], config['remote']['host'])
 		_src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
-		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], date)
-		_src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], date)
+		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
+		_src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo)
 		_src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'], config['remote']['host'], config['remote']['dir'])
 		_src_remote_extract(config['source']['file'], config['remote']['dir'], os.path.join(config['deploy']['dir'], date), config['remote']['user'], config['remote']['host'])
 		_src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'], config['remote']['user'], config['remote']['host'])

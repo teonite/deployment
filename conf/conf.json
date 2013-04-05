@@ -2,7 +2,8 @@
     "source": {
         "git": {
             "repo": "name",
-            "branch": "name"
+            "branch": "name",
+            "local": "repo"
         },
         "local": "path",
         "file": "path to file.tar.gz"
