@@ -21,8 +21,6 @@ from git import Repo, InvalidGitRepositoryError
 
 from misc import *
 
-#progress = RemoteProgress()
-
 def validate_config(config, section):
 	pretty_print("Validating %s config section" % section, 'debug')
 
@@ -32,6 +30,10 @@ def validate_config(config, section):
 
 		if not 'git' in config['source']:
 			raise NotConfiguredError("Section \"git\" does not exists")
+
+		if not 'dirs' in config['source']['git']:
+			pretty_print("No dirs selected, archiving whole repo", "info")
+			config['source']['git']['dirs'] = []
 
 		if not 'repo' in config['source']['git'] or not len(config['source']['git']['repo']):
 			raise NotConfiguredError("Repository not set")
@@ -102,14 +104,6 @@ def validate_config(config, section):
 	elif section == 'deploy':
 		if not 'deploy' in config:
 			raise NotConfiguredError('No section "deploy" in config.')
-	# validate_entry(config, 'upload_dir', required=False, default='')
-	# validate_entry(config, 'remote_host', required=True, default=None)
-	# validate_entry(config, 'remote_user', required=True, default=None)
-	# validate_entry(config, 'deploy_dir', required=True, default=None)
-	# validate_entry(config, 'config_to_copy', required=True, default=None)
-	# validate_entry(config, 'upload_clean', required=False, default='False')
-	# validate_entry(config, 'post_deploy', required=False, default='')
-	# validate_entry(config, 'pre_deploy', required=False, default='')
 
 	pretty_print('Config is valid!', 'debug')
 
@@ -125,7 +119,6 @@ def _src_clone(directory='', branch = '', repo = '', date=datetime.now().strftim
 
 	if os.path.isdir(directory):
 		pretty_print('Directory found.', 'info')
-#		shutil.move(dir, "%s-%s" %(dir, datetime.now().strftime("%Y%m%d-%H%M%S")))
 	else:
 		try:
 			pretty_print('Directory not found, creating.', 'info')
@@ -175,7 +168,7 @@ def src_clone(config_f = 'config.json', folder = '', date = datetime.now().strft
 	else:
 		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], date)
 
-def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S")):
+def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S"), dirs=[]):
 	env.host_string = 'localhost'
 	pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
@@ -191,19 +184,14 @@ def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime
 	pretty_print('Archiving current branch.', 'info')
 
 	compression = file.split('.')
-	pretty_print(os.getcwd())
-	f = open("%s" % file,'wb')
+	pretty_print("cwd: %s" % os.getcwd())
 
 	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
-		repo.archive(f, format="tar.gz")
+		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar.gz", 'HEAD', '' if not len(dirs) else ''.join(dirs))
 	elif compression[-1] == "tar":
-		repo.archive(f)
+		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar", 'HEAD', '' if not len(dirs) else ''.join(dirs))
 	else:
-		pretty_print("Unknown file format. Supported: tar, tar.gz, tgz", "error")
-		f.close()
 		raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
-
-	f.close()
 
 	os.chdir(old_dir)
 	pretty_print('[+] Archive prepare finished', 'info')
@@ -229,7 +217,7 @@ def src_prepare(config_f = 'config.json', folder = '', date = ''):
 		date = max(all_subdirs, key=os.path.getmtime)
 
 	pretty_print("Prepare completed, move to _src_prepare.")
-	_src_prepare(config['source']['file'], folder, config['source']['git']['branch'], date)
+	_src_prepare(config['source']['file'], folder, config['source']['git']['branch'], date, config['source']['git']['dirs'])
 
 def _src_upload(to_upload, user, host, directory):
 	env.host = host
@@ -485,7 +473,7 @@ def _deploy(config, subdir = ''):
 		_src_remote_test(config['remote']['user'], config['remote']['host'])
 		_src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
 		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
-		_src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo)
+		_src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo, config['source']['git']['dirs'])
 		_src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'], config['remote']['host'], config['remote']['dir'])
 		_src_remote_extract(config['source']['file'], config['remote']['dir'], os.path.join(config['deploy']['dir'], date), config['remote']['user'], config['remote']['host'])
 		_src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'], config['remote']['user'], config['remote']['host'])
