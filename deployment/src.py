@@ -424,7 +424,8 @@ def _src_pre_deploy(command_list, user, host):
 	pretty_print("[+] Starting remote pre-deploy commands", 'info')
 
 	if not len(command_list):
-		raise Exception('Pre_deploy commands not provided')
+		pretty_print('Pre_deploy commands not provided', 'info')
+		return
 
 	_src_remote_test(env.user, env.host)
 	for i in command_list:
@@ -447,7 +448,8 @@ def _src_post_deploy(command_list, user, host):
 	pretty_print("[+] Starting remote post-deploy commands", 'info')
 
 	if not len(command_list):
-		raise Exception('Post_deploy commands not provided')
+		pretty_print('Post_deploy commands not provided', 'info')
+		return
 
 	_src_remote_test(env.user, env.host)
 	for i in command_list:
