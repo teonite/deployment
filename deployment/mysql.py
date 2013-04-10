@@ -8,6 +8,7 @@
 from __future__ import print_function
 
 import sys
+import os
 from datetime import datetime
 
 from fabric.context_managers import cd, hide
