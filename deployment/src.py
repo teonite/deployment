@@ -163,10 +163,17 @@ def src_clone(config_f = 'config.json', folder = '', date = datetime.now().strft
 	config = prepare_config(config_f)
 	config = validate_config(config, 'source')
 
-	if len(folder):
-		_src_clone(folder, config['source']['git']['branch'], config['source']['git']['repo'], date)
+	if len(config['source']['git']['local']):
+		repo = config['source']['git']['local']
+		pretty_print("using config['source']['git']['local']")
 	else:
-		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], date)
+		repo = date
+		pretty_print("using date")
+
+	if len(folder):
+		_src_clone(folder, config['source']['git']['branch'], config['source']['git']['repo'], repo)
+	else:
+		_src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
 
 def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime("%Y%m%d_%H%M%S"), dirs=[]):
 	env.host_string = 'localhost'
@@ -464,11 +471,14 @@ def _deploy(config, subdir = ''):
 
 		if len(subdir):
 			repo = subdir
+			pretty_print('using provided subdir')
 		else:
 			if len(config['source']['git']['local']):
 				repo = config['source']['git']['local']
+				pretty_print("using config['source']['git']['local']")
 			else:
 				repo = date
+				pretty_print("using date")
 
 		_src_remote_test(config['remote']['user'], config['remote']['host'])
 		_src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
