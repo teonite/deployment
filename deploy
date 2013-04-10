@@ -89,6 +89,18 @@ if __name__ == "__main__":
 		usage()
 		sys.exit(2)
 
+	try:
+		if sys.argv[1] == 'usage' or sys.argv[1] == 'help':
+			raise Exception()
+	except:
+		usage()
+		sys.exit(1)
+
+	if not os.path.isfile(config_f):
+		print("\033[1mCONFIG ERROR: Config file does not exists: %s" % config_f)
+		print("CONFIG ERROR: Please provide correct one.\033[0m")
+		sys.exit(3)
+
 	prepare_logger(config_f)
 
 	try:

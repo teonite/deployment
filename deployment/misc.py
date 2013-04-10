@@ -19,6 +19,7 @@ version = "1.1.0"
 
 _log = None
 log = None
+config = None
 
 def _setupLogging(config):
 	"""
@@ -79,19 +80,20 @@ def _parse_config(filename, section=None):
 
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
+		print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
 		return {}
 
 def prepare_config(config_f = None, section = None):
-	config = None
+	global config
 	try:
-		if not config_f:
-			config = _parse_config("config.json")
-		else:
-			config = _parse_config(config_f)
-
+		if not config:
+			if not config_f:
+				config = _parse_config("config.json")
+			else:
+				config = _parse_config(config_f)
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+		print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
 
 	return config
