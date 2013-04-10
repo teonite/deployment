@@ -19,37 +19,31 @@ import traceback
 version = "1.0.1"
 
 _log = None
+log = None
 
-def _setupLogging():
+def _setupLogging(config):
 	"""
 	Setup logging
 	"""
-	config_file = None
-
-	if os.path.exists(os.path.expanduser('~/.teonite/deployment/logger.conf')):
-		config_file = os.path.expanduser('~/.teonite/deployment/logger.conf')
-
-	if os.path.exists('logger.conf'):
-		config_file = 'logger.conf'
-
-	if not config_file:
-		print ('FATAL: Cannot find logging configuration file')
-		print ('Probably you didn\'t initialize this script.')
-		print ('Please run this script with "init" command')
-		sys.exit()
-
-	logging.config.fileConfig(config_file)
+	global _log
+	logging.config.dictConfig(config)
 	_log = logging
 
-def getLogger():
+def getLogger(config):
 	"Get configured logger"
 
 	if _log is None:
-		_setupLogging()
+		if not 'logger' in config:
+			raise NotConfiguredError("Logger section does not exists")
+
+		_setupLogging(config['logger'])
 
 	return logging.getLogger('deployment')
 
-log = getLogger()
+def prepare_logger(config_f):
+	global log
+	config = prepare_config(config_f)
+	log = getLogger(config)
 
 def logException(ex):
 	log.debug("Error while saving form..")
@@ -76,7 +70,7 @@ def _prefix():
 #return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
 
 def _parse_config(filename, section=None):
-	pretty_print("Parsing config file: %s" % filename, 'debug')
+	#pretty_print("Parsing config file: %s" % filename, 'debug')
 	try:
 		f = open(filename, 'r')
 		conf = json.load(f)
@@ -88,29 +82,6 @@ def _parse_config(filename, section=None):
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
 		return {}
-
-	# return conf[section]
-
-# def validate_entry(config, entry, required=True, default=None):
-# 	try:
-# 		if not len(config[entry]):
-# 			if not required:
-# 				if not default:
-# 					raise Exception('Default must be set if required == False')
-# 				pretty_print('%s not set, assuming %s' % (entry, default), 'info')
-# 				config[entry] = default
-# 			else:
-# 				raise NotConfiguredError('%s not set.' % entry)
-# 		else:
-# 			pretty_print('%s provided: %s' % (entry, config[entry]), 'debug')
-#
-# 	except:
-# 		if not required:
-# 			pretty_print('%s not set, assuming %s' % (entry, default), 'info')
-# 			config[entry] = default
-# 		else:
-# 			pretty_print('%s not set. Please use correct one.' % entry, 'error')
-# 			raise NotConfiguredError('%s not set.' % entry)
 
 def prepare_config(config_f = None, section = None):
 	config = None
