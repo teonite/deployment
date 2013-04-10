@@ -51,23 +51,21 @@ def logException(ex):
 	log.error("exception caught while saving form, here's the trace: '%s'",
 		repr(traceback.format_exception(exceptionType, exceptionValue, exceptionTraceback))
 	)
-#import config
 
 class NotConfiguredError(Exception):
 	pass
 
 def pretty_print(str, level='debug'):
-	if level == 'debug':
-		log.debug('[%s] DEBUG: %s' % (env.host_string, str))
-	elif level == 'info':
-		log.info('[%s] INFO: %s' % (env.host_string, str))
-	elif level == 'error':
-		log.error('[%s] ERROR: %s' % (env.host_string, str))
-	#print ('[%s] %s: %s' % (env.host_string, level, str))
-
-def _prefix():
-	return
-#return 'source %s' % os.path.join('~', config.ENV_DIR, 'bin/activate')
+	if not log:
+		print('[%s] ERROR: %s' % (env.host_string, "logger not configured"))
+		print('[%s] ERROR: %s' % (env.host_string, str))
+	else:
+		if level == 'debug':
+			log.debug('[%s] DEBUG: %s' % (env.host_string, str))
+		elif level == 'info':
+			log.info('[%s] INFO: %s' % (env.host_string, str))
+		elif level == 'error':
+			log.error('[%s] ERROR: %s' % (env.host_string, str))
 
 def _parse_config(filename, section=None):
 	#pretty_print("Parsing config file: %s" % filename, 'debug')
