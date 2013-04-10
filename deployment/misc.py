@@ -16,7 +16,7 @@ import logging, logging.config
 import json
 import traceback
 
-version = "1.0.1"
+version = "1.1.0"
 
 _log = None
 log = None

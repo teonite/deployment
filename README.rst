@@ -1,10 +1,6 @@
 TEONITE Deployment and database migration tool
 ==============================================
 
-Before use this script please run::
+<todo: some description of this tool>
 
-    deploy init
-to configure ``config.json`` and ``logger.conf``.
-Those files are located in ~/.teonite/deployment
-
-``config.json`` can also be provided by ``-c/--config`` switch
+This tool requires ``config.json`` which can be provided by ``-c/--config`` switch
