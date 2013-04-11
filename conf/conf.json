@@ -3,7 +3,8 @@
         "git": {
             "repo": "git@git.teonite.net:teonite/status.git",
             "branch": "master",
-            "local": "repo"
+            "local": "repo",
+            "dirs" : ["src"]
         },
         "local": "test",
         "file": "arch.tar.gz"
