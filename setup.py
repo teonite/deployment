@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages, Command
+from setuptools import setup
 from deployment.misc import version
 
 readme = []
@@ -10,7 +10,7 @@ setup(
 	version=version,
 	author='TEONITE',
 	author_email='robert@teonite.com',
-	packages=['deployment', 'deployment.conf'],
+	packages=['deployment'],
 	scripts=['deploy'],
 	url='http://teonite.com/',
 	description='Deployment and database migration tool.',
