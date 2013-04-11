@@ -1,5 +1,5 @@
 from setuptools import setup
-from deployment.misc import version
+from deployment.version import version
 
 readme = []
 with open('README.rst', 'r') as fh:
