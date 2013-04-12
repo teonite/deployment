@@ -51,6 +51,26 @@ def usage():
 	print('Parameters: (optional)')
 	print('	-c, --config <filename> - if not selected, config.json is selected')
 
+def get_config_file():
+	path_list = [
+				'./src/conf/deploy.json',
+				'./src/conf/deployment.json',
+				'./src/settings/deploy.json',
+				'./src/settings/deployment.json',
+				'./conf/deploy.json',
+				'./conf/deployment.json',
+				'./settings/deploy.json',
+				'./settings/deployment.json',
+				'./src/conf/deployment/production.json',
+				'./src/settings/deployment/production.json',
+				'./conf/deployment/production.json',
+				'./settings/deployment/production.json'
+	]
+	for path in path_list:
+		if os.path.isfile(path):
+			# pretty_print("File found in %s" % path)
+			return path
+
 if __name__ == "__main__":
 	if len(sys.argv) == 1:
 		usage()
@@ -64,7 +84,7 @@ if __name__ == "__main__":
 	try:
 		opts, args = getopt.gnu_getopt(sys.argv[1:], "c:", ["config="])
 
-		config_f = 'config.json'
+		config_f = None
 
 		for o, a in opts:
 			if o == "-c" or o == "--config":
@@ -82,6 +102,10 @@ if __name__ == "__main__":
 
 			else:
 				print("unhandled option")
+
+		if not config_f:
+			# pretty_print("Config not provided, searching for default one")
+			config_f = get_config_file()
 
 	except getopt.GetoptError as err:
 		# print help information and exit:
