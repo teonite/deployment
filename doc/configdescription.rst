@@ -149,14 +149,14 @@ Section connected with GIT repository
 * *local*
       Local repository directory, placed inside main local directory
 * *dirs*
-      Directories and files is deployment archive made of
+      Directories and files which deployment archive is made of
 
 remote
 ------
 During application deploy process, SSH with key-based authentication is used. You need to set host address and user. Ports default value is 22.
 
 * *dir*
-    Dire
+    Directory where archive is uploaded during deployment
 * *clean*
     Flag used to specify if archive after deployment has to be removed
 
