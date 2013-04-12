@@ -7,7 +7,7 @@ Contents:
    :maxdepth: 2
 
    usage
-   Sample config <sampleconfig>
+   Deployment flow <deployflow>
    Config description <configdescription>
 
 
