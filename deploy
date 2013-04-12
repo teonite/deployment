@@ -46,7 +46,7 @@ def usage():
 	print('	- mysql_db_dump - dump database to selected file')
 	print('	- mysql_db_restore - restore database from file')
 	print('	- mysql_dump_remove - remove dump file from remote host')
-	print('	- restart_supervisor - restart process in Supervisor')
+	print('	- restart_supervisor <process_name> <process_name> ... - restart process in Supervisor')
 	print(' ')
 	print('Parameters: (optional)')
 	print('	-c, --config <filename> - if not selected, config.json is selected')
@@ -168,7 +168,10 @@ if __name__ == "__main__":
 		elif s == 'mysql_dump_remove':
 			mysql_dump_remove(config_f)
 		elif s == 'restart_supervisor':
-			restart_supervisor(config_f)
+			if len(sys.argv) >= 3:
+				restart_supervisor(config_f, sys.argv[2:])
+			else:
+				restart_supervisor(config_f)
 		else:
 			usage()
 	except:

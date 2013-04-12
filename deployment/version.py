@@ -5,4 +5,4 @@
 # Copyright (C) 2012 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
 #
 
-version = "1.1.3"
+version = "1.1.4"
