@@ -21,5 +21,5 @@ setup(
 		"GitPython >= 0.3.2.RC1",
 		"graypy >= 0.2.7",
 		],
-	#data_files=[('~/.teonite/deployment', ['conf/config.json.template', 'conf/logger.conf.tpl']),],
+	data_files=[('deployment/conf/', ['conf/conf.json.template'])]
 )
