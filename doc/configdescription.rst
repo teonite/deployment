@@ -162,42 +162,59 @@ During application deploy process, SSH with key-based authentication is used. Yo
 
 deploy
 ------
-* dir
-* pre
-* post
+* *dir*
+    Directory where application lives
+* *pre*
+    List of commands launched before deployment
+* *post*
+    List of commands launched after deployment
 
 config
 ------
+In this section you can configure list of files that should be copied after deployment.::
+
+            "display name": {
+                "src": "absolute path to source file",
+                "dst": "absolute path to destination"
+            }
 
 mysql
 -----
 
-server
-^^^^^^
-
-* host
-* user
-* password
-* port
-* database
-
 shell
 ^^^^^
+Shell from which all MySQL commands are executed
 
-* dumpfile
 * user
 * host
 * port
-* migration_dir
+
+* *dumpfile*
+    File used to make dumps of database and as a temporary file
+
+* *migration_dir*
+    Into this dir will be uploaded ``.sql`` files used in migration process
+
+server
+^^^^^^
+MySQL server configuration used in all commands. Server must be accessible from shell, mentioned before
+
+* *host*
+* *user*
+* *password*
+* *port*
+* *database*
+
 
 supervisor
 ----------
 
-* host
-* port
-* user
-* password
-* apps
+* *host*
+* *port*
+* *user*
+* *password*
+* *apps*
+    Supervisor processes which will be restarted
 
 logger
 ------
