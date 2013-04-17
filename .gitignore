@@ -2,5 +2,6 @@ History.md
 deployment.egg-info
 dist
 *.pyc
+.idea/*
 .DS_Store
 *.swp
