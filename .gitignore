@@ -1,6 +1,6 @@
-*.conf
-*.ini
+History.md
+deployment.egg-info
+dist
 *.pyc
-.idea/*
 .DS_Store
-config.json
+*.swp
