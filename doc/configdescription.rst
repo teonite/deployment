@@ -183,11 +183,13 @@ mysql
 
 shell
 ^^^^^
-Shell from which all MySQL commands are executed
+Shell from which all MySQL commands are executed, standard requrements are:
 
-* user
-* host
-* port
+* *user*
+* *host*
+* *port*
+
+Extra:
 
 * *dumpfile*
     File used to make dumps of database and as a temporary file
@@ -199,6 +201,8 @@ server
 ^^^^^^
 MySQL server configuration used in all commands. Server must be accessible from shell, mentioned before
 
+Requirements:
+
 * *host*
 * *user*
 * *password*
@@ -208,11 +212,16 @@ MySQL server configuration used in all commands. Server must be accessible from 
 
 supervisor
 ----------
+Supervisor is a client/server system that allows its users to monitor and control a number of processes on UNIX-like operating systems.
+
+Requirements:
 
 * *host*
 * *port*
 * *user*
 * *password*
+
+
 * *apps*
     Supervisor processes which will be restarted
 

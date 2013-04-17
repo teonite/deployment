@@ -3,7 +3,24 @@
 Usage
 =====
 
-List of available commands:
+Default directories for configuration file
+==========================================
+::
+
+    ./src/conf/deploy.json
+    ./src/conf/deployment.json
+    ./src/settings/deploy.json
+    ./src/settings/deployment.json
+    ./conf/deploy.json
+    ./conf/deployment.json
+    ./settings/deploy.json
+    ./settings/deployment.json
+    ./src/conf/deployment/production.json
+    ./src/settings/deployment/production.json
+    ./conf/deployment/production.json
+    ./settings/deployment/production.json
+
+List of available commands
 ===========================
 
 :deploy <local_subfolder>: deploys new version
