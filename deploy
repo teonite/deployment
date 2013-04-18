@@ -55,6 +55,8 @@ def usage():
 
 def get_config_file():
 	path_list = [
+				'./deployment/production.json',
+				'./deployment/development.json',
 				'./src/conf/deploy.json',
 				'./src/conf/deployment.json',
 				'./src/settings/deploy.json',
