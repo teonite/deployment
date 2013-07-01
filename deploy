@@ -110,7 +110,7 @@ if __name__ == "__main__":
 				while sys.argv[i] != o:
 					i += 1
 				sys.argv.pop(i)
-				sys.exit()
+				sys.exit(0)
 
 			else:
 				print("\033[1mPararmeters %s %s unhandled\033[0m" % (o,a))

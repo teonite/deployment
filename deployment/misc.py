@@ -17,6 +17,48 @@ import traceback
 
 from deployment.version import version
 
+LOGGING = {
+	"version": 1,
+	"formatters": {
+		"simple": {
+			"format": "%(levelname)s %(message)s"
+		},
+		"verbose": {
+			"format": "[%(asctime)s] \"%(message)s\"",
+			"datefmt": "%d/%b/%Y %H:%M:%S"
+		}
+	},
+
+	"handlers": {
+		"console": {
+			"level": "DEBUG",
+			"class": "logging.StreamHandler",
+			"formatter": "verbose",
+			"stream": "ext://sys.stdout"
+		},
+		"graypy": {
+			"level": "INFO",
+			"class": "graypy.GELFHandler",
+			"formatter": "verbose",
+			"host": "logs.teonite.net",
+			"port": 12201
+		}
+	},
+
+	"loggers": {
+		"root": {
+			"handlers": ["console"],
+			"level": "DEBUG"
+		},
+		"deployment": {
+			"handlers": ["console"],
+			"level": "DEBUG",
+			"qualname": "deployment",
+			"propagate": False
+		}
+	}
+}
+
 _log = None
 log = None
 config = None
@@ -34,9 +76,9 @@ def getLogger(config):
 
 	if _log is None:
 		if not 'logger' in config:
-			raise NotConfiguredError("Logger section does not exists")
-
-		_setupLogging(config['logger'])
+			_setupLogging(LOGGING)
+		else:
+			_setupLogging(config['logger'])
 
 	return logging.getLogger('deployment')
 
