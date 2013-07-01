@@ -135,8 +135,12 @@ source
 ------
 * *local* -
   Directory where all local files are placed (GIT repository, archive file)
+
+  *Default:* current working directory
 * *file* -
   Filename of file used to deploy on remote host, currently supported extensions are .tar.gz, .tgz, .tar
+
+  *Default:* ``deployment.tar.gz``
 
 git
 ^^^
@@ -148,6 +152,8 @@ Section connected with GIT repository
       Branch used to clone source
 * *local*
       Local repository directory, placed inside main local directory
+
+      *Default:* creates folder with current date as name
 * *dirs*
       Directories and files which deployment archive is made of
 
@@ -157,6 +163,8 @@ During application deploy process, SSH with key-based authentication is used. Yo
 
 * *dir*
     Directory where archive is uploaded during deployment
+
+    *Default:* ``/tmp/``
 * *clean*
     Flag used to specify if archive after deployment has to be removed
 
@@ -229,5 +237,7 @@ logger
 ------
 
 The logger is configured by using ``logging.config.dictConfig()`` function, format is described here_
+
+*Default*: same as listed above
 
 .. _here: http://docs.python.org/2/library/logging.config.html#logging-config-dictschema
