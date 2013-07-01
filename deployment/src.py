@@ -194,9 +194,9 @@ def _src_prepare(file, directory='', branch = '', date = datetime.now().strftime
 	pretty_print("cwd: %s" % os.getcwd())
 
 	if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
-		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar.gz", 'HEAD', '' if not len(dirs) else ''.join(dirs))
+		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar.gz", 'HEAD', '' if not len(dirs) else dirs)
 	elif compression[-1] == "tar":
-		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar", 'HEAD', '' if not len(dirs) else ''.join(dirs))
+		repo.git.archive('--o', os.path.join(os.getcwd(),file), '--format',"tar", 'HEAD', '' if not len(dirs) else dirs)
 	else:
 		raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
 
