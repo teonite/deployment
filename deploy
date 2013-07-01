@@ -153,6 +153,11 @@ if __name__ == "__main__":
 			else:
 				deploy(config_f, sys.argv[2])
 
+			try:
+				restart_supervisor(config_f)
+			except NotConfiguredError:
+				pretty_print('Supervisor not configured, omitting', 'info')
+
 		elif s == 'db_migrate':
 			if len(sys.argv) == 2:
 				db_migrate(config_f, None)
@@ -188,6 +193,7 @@ if __name__ == "__main__":
 				raise Exception('Source folder not provided.')
 			else:
 				src_remote_deploy(config_f, sys.argv[2])
+
 		elif s == 'src_remote_rollback':
 			src_remote_rollback(config_f)
 		elif s == 'src_pre_deploy':
