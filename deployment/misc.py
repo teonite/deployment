@@ -103,11 +103,13 @@ def pretty_print(str, level='debug'):
 		print('[%s] ERROR: %s' % (env.host_string, str))
 	else:
 		if level == 'debug':
-			log.debug('[%s] DEBUG: %s' % (env.host_string, str))
+			log.debug('[\x1b[36m%s\x1b[0m] \x1b[35mDEBUG\x1b[0m: %s' % (env.host_string, str))
 		elif level == 'info':
-			log.info('[%s] INFO: %s' % (env.host_string, str))
+			log.info('[\x1b[36m%s\x1b[0m] \x1b[32mINFO\x1b[0m: %s' % (env.host_string, str))
 		elif level == 'error':
-			log.error('[%s] ERROR: %s' % (env.host_string, str))
+			log.error('[\x1b[36m%s\x1b[0m] \x1b[31mERROR\x1b[0m: %s' % (env.host_string, str))
+		elif level == 'warning':
+			log.warning('[\x1b[36m%s\x1b[0m] \x1b[33mWARNING\x1b[0m: %s' % (env.host_string, str))
 
 def _parse_config(filename, section=None):
 	#pretty_print("Parsing config file: %s" % filename, 'debug')
