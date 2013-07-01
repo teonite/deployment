@@ -122,7 +122,7 @@ if __name__ == "__main__":
 	except getopt.GetoptError as err:
 		# print help information and exit:
 		pretty_print(str(err)) # will print something like "option -a not recognized"
-		sys.exit(2)
+		sys.exit(1)
 
 	try:
 		if sys.argv[1] == 'usage' or sys.argv[1] == 'help':
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 	if not config_f or not os.path.isfile(config_f):
 		print("\033[1mCONFIG ERROR: Config file does not exists: %s" % config_f)
 		print("CONFIG ERROR: Please provide correct one.\033[0m")
-		sys.exit(3)
+		sys.exit(1)
 
 	prepare_logger(config_f)
 
@@ -219,3 +219,4 @@ if __name__ == "__main__":
 	except:
 		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
 		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
+		sys.exit(1)

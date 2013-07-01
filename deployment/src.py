@@ -315,7 +315,8 @@ def	_src_remote_extract(file, file_dir, dest_dir, user, host):
 	elif compression[-1] == "tar":
 		run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
 	else:
-		pretty_print("Unknown file format. Supported: tar, tar.gz, tgz", "error")
+		raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
+
 
 
 	pretty_print("[+] Remote extract finished", 'info')
