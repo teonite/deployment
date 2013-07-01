@@ -53,7 +53,7 @@ def validate_config(config, section):
 
 		if not 'file' in config['source'] or not len(config['source']['file']):
 			pretty_print("Archive file not set, using src.tar", 'info')
-			config['source']['file'] = 'src.tar'
+			config['source']['file'] = 'deployment.tar.gz'
 
 		config['source']['file'] = os.path.expanduser(config['source']['file'])
 
@@ -73,8 +73,8 @@ def validate_config(config, section):
 			env.port = config['remote']['port']
 
 		if not 'dir' in config['remote'] :
-			pretty_print("Dir not set.", 'info')
-			config['remote']['dir'] = ""
+			pretty_print("Dir not set. Using /tmp/ as default", 'info')
+			config['remote']['dir'] = "/tmp/"
 
 		if not 'clean' in config['remote'] :
 			pretty_print("Clean not set. No clean by default", 'info')
