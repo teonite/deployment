@@ -20,6 +20,7 @@ setup(
 		"Fabric >= 1.5.1",
 		"GitPython >= 0.3.2.RC1",
 		"graypy >= 0.2.7",
+        ""
 		],
 	data_files=[('deployment/conf/', ['conf/conf.json.template'])]
 )
