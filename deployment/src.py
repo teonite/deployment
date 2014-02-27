@@ -70,7 +70,7 @@ def validate_config(config, section):
         if not 'port' in config['remote']:
             pretty_print("Port not set. Using 22", 'info')
             config['remote']['port'] = 22
-            env.port = config['remote']['port']
+        env.port = config['remote']['port']
 
         if not 'dir' in config['remote']:
             pretty_print("Dir not set. Using /tmp/ as default", 'info')
