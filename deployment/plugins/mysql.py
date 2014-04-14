@@ -17,7 +17,7 @@ from fabric.state import env
 from fabric.api import run
 from fabric.contrib import files
 
-from misc import *
+from common import *
 
 def validate_config(config, section):
 

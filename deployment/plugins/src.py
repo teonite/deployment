@@ -18,7 +18,7 @@ from fabric.contrib import files
 from git import Repo, InvalidGitRepositoryError
 
 from gitarchive import GitArchiver
-from misc import *
+from common import *
 
 
 def validate_config(config, section):
