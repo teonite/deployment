@@ -16,7 +16,7 @@ __author__ = 'kkrzysztofik'
 
 
 class Supervisor(Plugin):
-    command = ['restart_supervisor']
+    command = 'restart_supervisor'
     config = None
     description = 'Arguments: <process_name> <process_name> ... - restart process in Supervisor'
 

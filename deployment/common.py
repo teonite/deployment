@@ -15,6 +15,8 @@ import traceback
 from fabric.state import env
 from fabric.api import run
 
+import defaults
+
 LOGGING = {
     "version": 1,
     "formatters": {
@@ -126,9 +128,9 @@ def _parse_config(filename, section=None):
 
         return conf
 
-    except:
-        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-        print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
+    except IOError:
+        # exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+        # print("Something went wrong. Returning empty map. Message: %s - %s" % (exceptionType, exceptionValue))
         return {}
 
 
@@ -140,6 +142,8 @@ def prepare_config(config_f=None):
                 config = _parse_config("config.json")
             else:
                 config = _parse_config(config_f)
+        defaults.config.update(config)
+        config = defaults.config
     except:
         exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
         print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))

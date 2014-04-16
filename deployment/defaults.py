@@ -3,10 +3,10 @@ __author__ = 'kkrzysztofik'
 config = {
     "source": {
         "git": {
-            "repo": "git@git.teonite.net:teonite/status.git",
+            "repo": ".",
             "branch": "master",
             "local": "repo",
-            "dirs" : ["src"]
+            "dirs": []
         },
         "local": "test",
         "file": "arch.tar.gz"
@@ -51,31 +51,45 @@ config = {
         }
     },
 
-    "mysql" : {
-        "server" : {
-            "host" : "localhost",
-            "user" : "root",
-            "password" : "pass",
-            "port" : 3306,
-            "database" : "status"
+    "mysql": {
+        "server": {
+            "host": "localhost",
+            "user": "root",
+            "password": "pass",
+            "port": 3306,
+            "database": "status"
         },
-        "shell" : {
-            "dumpfile" : "temp.sql",
-            "user" : "kkrzysztofik",
-            "host" : "192.168.56.101",
-            "port" : 22,
-            "migration_dir" : "test"
+        "shell": {
+            "dumpfile": "temp.sql",
+            "user": "kkrzysztofik",
+            "host": "192.168.56.101",
+            "port": 22,
+            "migration_dir": "test"
         }
     },
 
-    "supervisor" : {
-        "host" : "192.168.56.101",
-        "port" : 9001,
-        "user" : "admin",
-        "password" : "pass",
-        "apps" : [
-            "status",
-            "status_celery"
-        ]
+    "supervisor": {
+        "host": "",
+        "port": 9001,
+        "user": "admin",
+        "password": "",
+        "apps": []
     }
 }
+
+path_list = [
+        './deployment/production.json',
+        './deployment/development.json',
+        './src/conf/deploy.json',
+        './src/conf/deployment.json',
+        './src/settings/deploy.json',
+        './src/settings/deployment.json',
+        './conf/deploy.json',
+        './conf/deployment.json',
+        './settings/deploy.json',
+        './settings/deployment.json',
+        './src/conf/deployment/production.json',
+        './src/settings/deployment/production.json',
+        './conf/deployment/production.json',
+        './settings/deployment/production.json'
+]
