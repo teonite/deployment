@@ -17,8 +17,9 @@ from fabric.contrib import files
 
 from git import Repo, InvalidGitRepositoryError
 
-from gitarchive import GitArchiver
-from common import *
+from deployment.libs.gitarchive import GitArchiver
+from deployment.common import *
+from deployment.plugin import Plugin
 
 
 def validate_config(config, section):
@@ -110,136 +111,175 @@ def validate_config(config, section):
     return config
 
 
-def _src_clone(directory='', branch='', repo='', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
-    env.host_string = 'localhost'
-    pretty_print('[+] Repository clone start: %s' % directory, 'info')
+class SrcClone(Plugin):
+    command = 'src_clone'
+    config = None
+    description = 'Arguments: <folder> <subfolder> - clone repo to subfolder in local folder'
 
-    if len(directory) == 0:
-        pretty_print('Directory not selected, assuming current one.', 'info')
-        directory = os.getcwd()
+    def validate_config(self):
+        if not 'source' in config:
+            raise NotConfiguredError("Source section does not exists")
 
-    if os.path.isdir(directory):
-        pretty_print('Directory found.', 'info')
-    else:
+        if not 'git' in config['source']:
+            raise NotConfiguredError("Section \"git\" does not exists")
+
+        if not 'repo' in config['source']['git'] or not len(config['source']['git']['repo']):
+            pretty_print("Repository not set. Assuming current dir has a git repo", 'info')
+            try:
+                g = Repo(os.getcwd())
+                config['source']['git']['repo'] = g.remotes.origin.url
+            except InvalidGitRepositoryError:
+                raise NotConfiguredError("No repo provided, and not in tracked directory")
+
+        if not 'branch' in config['source']['git'] or not len(config['source']['git']['branch']):
+            pretty_print("Repository branch not set. Clone from \"master\"", 'info')
+            config['source']['git']['branch'] = 'master'
+
+        if not 'local' in config['source']['git']:
+            pretty_print("git local repo not set. Using current folder as repo", 'info')
+            config['source']['git']['local'] = ""
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
         try:
-            pretty_print('Directory not found, creating.', 'info')
-            os.mkdir(directory)
-        except:
-            raise Exception('Cannot create directory %s, please create the folder manually' % directory)
+            directory = args[0]
+        except IndexError:
+            directory = config['source']['local']
 
-    old_dir = os.getcwd()
-    os.chdir(directory)
+        try:
+            branch = args[1]
+        except IndexError:
+            branch = config['source']['git']['branch']
 
-    try:
-        if not os.path.isdir("%s/.git" % date):  # repo = Repo(dir)
-            raise InvalidGitRepositoryError()
+        repo = config['source']['git']['repo']
 
-        repo = Repo(date)
+        env.host_string = 'localhost'
+        pretty_print('[+] Repository clone start: %s' % directory, 'info')
 
-        pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
+        # if not len(directory):
+        #     pretty_print('Directory not selected, assuming current one.', 'info')
+        #     directory = os.getcwd()
 
-    except InvalidGitRepositoryError:  # Repo doesn't exists
-        pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
-        if len(repo) == 0:
-            pretty_print('Repository not selected. Returning.', 'info')
-            raise InvalidGitRepositoryError
-        repo = Repo.clone_from(repo, date)
+        # if os.path.isdir(directory):
+        #     pretty_print('Directory found.', 'info')
+        # else:
+            # try:
+            #     pretty_print('Directory not found, creating.', 'info')
+            #     os.mkdir(directory)
+            # except:
+            #     raise Exception('Cannot create directory %s, please create the folder manually' % directory)
 
-    if not len(branch):
-        branch = repo.active_branch
+        # old_dir = os.getcwd()
+        # os.chdir(directory)
 
-    if repo.active_branch is not branch:
-        pretty_print('Changing branch', 'info')
-        repo.git.checkout('master')
+        try:
+            if not os.path.isdir("%s/.git" % directory):  # repo = Repo(dir)
+                if os.path.isdir(directory):
+                    raise IOError('Directory already exists and is not repository. Clone will fail. Please check your '
+                                  'configuration')
+                raise InvalidGitRepositoryError()
 
-    pretty_print('Pulling changes', 'info')
-    repo.git.pull('origin', branch)
+            repo = Repo(directory)
 
-    pretty_print('Fetching submodules', 'info')
-    repo.git.submodule("init")
-    repo.submodule_update(init=True)
+            pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 
-    os.chdir(old_dir)
-    #repo.create_remote('origin', config.GIT_REPO)
+        except InvalidGitRepositoryError:  # Repo doesn't exists
+            pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
+            if len(repo) == 0:
+                pretty_print('Repository not selected. Returning.', 'info')
+                raise InvalidGitRepositoryError
+            repo = Repo.clone_from(repo, directory)
 
-    pretty_print('[+] Repository clone finished', 'info')
+        if not len(branch):
+            branch = repo.active_branch
 
+        if repo.active_branch is not branch:
+            pretty_print('Changing branch', 'info')
+            repo.git.checkout('master')
 
-def src_clone(config_f='config.json', folder='', date=datetime.now().strftime("%Y%m%d_%H%M%S")):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'source')
+        pretty_print('Pulling changes', 'info')
+        repo.git.pull('origin', branch)
 
-    if len(config['source']['git']['local']):
-        repo = config['source']['git']['local']
-        pretty_print("using config['source']['git']['local']")
-    else:
-        repo = date
-        pretty_print("using date")
+        pretty_print('Fetching submodules', 'info')
+        repo.git.submodule("init")
+        repo.submodule_update(init=True)
 
-    if len(folder):
-        _src_clone(folder, config['source']['git']['branch'], config['source']['git']['repo'], repo)
-    else:
-        _src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
+        # os.chdir(old_dir)
+        #repo.create_remote('origin', config.GIT_REPO)
 
-
-def _src_prepare(file, directory='', branch='', date=datetime.now().strftime("%Y%m%d_%H%M%S"), dirs=[]):
-    env.host_string = 'localhost'
-    pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
-
-    old_dir = os.getcwd()
-    os.chdir(directory)
-
-    try:
-        repo = Repo(date)
-        pretty_print('Repository found.', 'info')
-    except InvalidGitRepositoryError: # Repo doesn't exists
-        raise Exception('Repository not found. Please provide correct one.')
-
-    pretty_print('Archiving current branch.', 'info')
-
-    # compression = file.split('.')
-    pretty_print("cwd: %s" % os.getcwd())
-
-    archiver = GitArchiver(main_repo_abspath=os.path.join(os.getcwd(), date))
-    archiver.create(os.path.join(os.getcwd(), file))
-
-    # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
-    #     repo.git.archive-all('--o', os.path.join(os.getcwd(), file), '--format', "tar.gz", 'HEAD',
-    #                          '' if not len(dirs) else dirs)
-    # elif compression[-1] == "tar":
-    #     repo.git.archive-all('--o', os.path.join(os.getcwd(), file), '--format', "tar", 'HEAD',
-    #                          '' if not len(dirs) else dirs)
-    # else:
-    #     raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
-
-    os.chdir(old_dir)
-    pretty_print('[+] Archive prepare finished', 'info')
+        pretty_print('[+] Repository clone finished', 'info')
 
 
-def src_prepare(config_f='config.json', folder='', date=''):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'source')
+class SrcPrepare(Plugin):
+    command = 'src_prepare'
+    config = None
+    description = 'Arguments: <folder> <subfolder> - archive repo from subfolder in local folder to file'
 
-    if not len(folder):
-        folder = config['source']['local']
+    def validate_config(self):
+        if not 'source' in config:
+            raise NotConfiguredError("Source section does not exists")
 
-    folder = os.path.expanduser(folder)
+        if not 'git' in config['source']:
+            raise NotConfiguredError("Section \"git\" does not exists")
 
-    if not len(date): #prepare the newest directory
-        pretty_print("Subfolder not provided, assuming newest.", 'info')
-        if not folder.startswith('/'):
-            folder = os.path.join(os.getcwd(), folder)
-        pretty_print("Folder: %s" % folder)
-        all_subdirs = [os.path.join(folder, d) for d in os.listdir(folder) if os.path.isdir(os.path.join(folder, d))]
-        pretty_print('Subdirs: %s' % all_subdirs)
-        pretty_print("%s" % all_subdirs[0])
+        if not 'dirs' in config['source']['git']:
+            pretty_print("No dirs selected, archiving whole repo", "info")
+            config['source']['git']['dirs'] = []
 
-        date = max(all_subdirs, key=os.path.getmtime)
+        if not 'branch' in config['source']['git'] or not len(config['source']['git']['branch']):
+            pretty_print("Repository branch not set. Clone from \"master\"", 'info')
+            config['source']['git']['branch'] = 'master'
 
-    pretty_print("Prepare completed, move to _src_prepare.")
-    _src_prepare(config['source']['file'], folder, config['source']['git']['branch'], date,
-                 config['source']['git']['dirs'])
+        if not 'file' in config['source'] or not len(config['source']['file']):
+            pretty_print("Archive file not set, using src.tar.gz", 'info')
+            config['source']['file'] = 'src.tar.gz'
 
+        config['source']['file'] = os.path.expanduser(config['source']['file'])
+
+    def run(self, *args, **kwargs):
+        archive_file = config['source']['file']
+        branch = config['source']['git']['branch']
+        dirs = config['source']['git']['dirs']
+
+        try:
+            directory = args[0]
+        except IndexError:
+            directory = config['source']['local']
+
+        directory = os.path.expanduser(directory)
+
+        env.host_string = 'localhost'
+        pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
+
+        old_dir = os.getcwd()
+        os.chdir(directory)
+
+        try:
+            repo = Repo(directory)
+            pretty_print('Repository found.', 'info')
+        except InvalidGitRepositoryError:  # Repo doesn't exists
+            raise NotConfiguredError('Repository not found. Please provide correct one.')
+
+        pretty_print('Archiving current branch.', 'info')
+
+        # compression = file.split('.')
+        pretty_print("cwd: %s" % os.getcwd())
+
+        archiver = GitArchiver(main_repo_abspath=directory, include_dirs=dirs)
+        archiver.create(os.path.join(os.getcwd(), archive_file))
+
+        # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
+        #     repo.git.archive-all('--o', os.path.join(os.getcwd(), file), '--format', "tar.gz", 'HEAD',
+        #                          '' if not len(dirs) else dirs)
+        # elif compression[-1] == "tar":
+        #     repo.git.archive-all('--o', os.path.join(os.getcwd(), file), '--format', "tar", 'HEAD',
+        #                          '' if not len(dirs) else dirs)
+        # else:
+        #     raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
+
+        os.chdir(old_dir)
+        pretty_print('[+] Archive prepare finished', 'info')
 
 def _src_upload(to_upload, user, host, directory):
     env.host = host
