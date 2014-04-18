@@ -87,10 +87,9 @@ class GitArchiver(object):
         self.main_repo_abspath = main_repo_abspath
 
         if include_dirs:
-            for directory in include_dirs:
-                directory = path.join(main_repo_abspath, dir)
-
-        self.include_dirs = include_dirs
+            self.include_dirs = " ".join(include_dirs)
+        else:
+            self.include_dirs = None
 
     def create(self, output_path, dry_run=False, output_format=None):
         """
@@ -281,8 +280,9 @@ class GitArchiver(object):
         @return:    Iterator to traverse files under git control relative to main_repo_abspath.
         """
         repo_abspath = path.join(self.main_repo_abspath, repo_path)
-        repo_file_paths = self.read_git_shell("git ls-files --cached --full-name --no-empty-directory",
-                                              repo_abspath if not self.include_dirs else self.include_dirs).splitlines()
+        repo_file_paths = self.read_git_shell("git ls-files --cached --full-name --no-empty-directory %s" % ("" if
+                                              not self.include_dirs else self.include_dirs),
+                                              repo_abspath).splitlines()
         exclude_patterns = self.get_exclude_patterns(repo_abspath, repo_file_paths)
 
         for repo_file_path in repo_file_paths:

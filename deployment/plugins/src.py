@@ -190,7 +190,7 @@ class SrcPrepare(Plugin):
         # compression = file.split('.')
         pretty_print("cwd: %s" % os.getcwd())
 
-        archiver = GitArchiver(main_repo_abspath=repo_directory, include_dirs=dirs)
+        archiver = GitArchiver(main_repo_abspath=os.path.join(os.getcwd(), repo_directory), include_dirs=dirs) #
         archiver.create(os.path.join(os.getcwd(), archive_file))
 
         # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
@@ -753,29 +753,24 @@ class Deploy(Plugin):
                     repo = date
                     pretty_print("using date")
 
-            # _src_remote_test(config['remote']['user'], config['remote']['host'])
-            SrcRemoteCheck(config).run()
-            # _src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
-            SrcPreDeploy(config).run()
-            # _src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
-            SrcClone(config).run()
-            # _src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo,
-            #              config['source']['git']['dirs'])
-            SrcPrepare(config).run()
-            # _src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'],
-            #             config['remote']['host'], config['remote']['dir'])
-            SrcUpload(config).run()
-            # _src_remote_extract(config['source']['file'], config['remote']['dir'],
-            #                     os.path.join(config['deploy']['dir'], date), config['remote']['user'],
-            #                     config['remote']['host'])
-            SrcRemoteExtract(config).run()
-            # _src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'],
-            #                    config['remote']['user'], config['remote']['host'])
-            SrcRemoteDeploy(config).run()
-            # _src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
-            SrcRemoteConfig(config).run()
-            # _src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
-            SrcPostDeploy(config).run()
+            steps = [SrcRemoteCheck, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
+                     SrcRemoteDeploy, SrcRemoteConfig, SrcPostDeploy]
+
+            for step in steps:
+                if step in [SrcRemoteExtract, SrcRemoteDeploy]:
+                    step(config).run(date)
+                else:
+                    step(config).run()
+
+            # SrcRemoteCheck(config).run()
+            # SrcPreDeploy(config).run()
+            # SrcClone(config).run()
+            # SrcPrepare(config).run()
+            # SrcUpload(config).run()
+            # SrcRemoteExtract(config).run(date)
+            # SrcRemoteDeploy(config).run(date)
+            # SrcRemoteConfig(config).run()
+            # SrcPostDeploy(config).run()
 
             pretty_print('Cleaning flag: %s' % config['remote']['clean'])
             if config['remote']['clean']:
