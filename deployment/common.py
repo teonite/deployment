@@ -104,19 +104,19 @@ class NotConfiguredError(Exception):
     pass
 
 
-def pretty_print(str, level='debug'):
+def pretty_print(msg, level='debug'):
     if not log:
         print('[%s] ERROR: %s' % (env.host_string, "logger not configured"))
-        print('[%s] ERROR: %s' % (env.host_string, str))
+        print('[%s] ERROR: %s' % (env.host_string, msg))
     else:
         if level == 'debug':
-            log.debug('[\x1b[36m%s\x1b[0m] \x1b[35mDEBUG\x1b[0m: %s' % (env.host_string, str))
+            log.debug('[\x1b[36m%s\x1b[0m] \x1b[35mDEBUG\x1b[0m: %s' % (env.host_string, msg))
         elif level == 'info':
-            log.info('[\x1b[36m%s\x1b[0m] \x1b[32mINFO\x1b[0m: %s' % (env.host_string, str))
+            log.info('[\x1b[36m%s\x1b[0m] \x1b[32mINFO\x1b[0m: %s' % (env.host_string, msg))
         elif level == 'error':
-            log.error('[\x1b[36m%s\x1b[0m] \x1b[31mERROR\x1b[0m: %s' % (env.host_string, str))
+            log.error('[\x1b[36m%s\x1b[0m] \x1b[31mERROR\x1b[0m: %s' % (env.host_string, msg))
         elif level == 'warning':
-            log.warning('[\x1b[36m%s\x1b[0m] \x1b[33mWARNING\x1b[0m: %s' % (env.host_string, str))
+            log.warning('[\x1b[36m%s\x1b[0m] \x1b[33mWARNING\x1b[0m: %s' % (env.host_string, msg))
 
 
 def _parse_config(filename, section=None):

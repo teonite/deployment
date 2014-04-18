@@ -43,10 +43,8 @@ class Supervisor(Plugin):
 
         pretty_print('Config is valid!', 'debug')
 
-    def run(self, **kwargs):
-        apps = kwargs.get('apps', None)
-
-        if not apps:
+    def run(self, *apps, **kwargs):
+        if not len(apps):
             if not 'apps' in self.config['supervisor']:
                 raise NotConfiguredError("Apps not set")
 

@@ -5,11 +5,11 @@ config = {
         "git": {
             "repo": ".",
             "branch": "master",
-            "local": "repo",
+            "local": ".",
             "dirs": []
         },
-        "local": "test",
-        "file": "arch.tar.gz"
+        "local": ".",
+        "file": "src.tar.gz"
     },
 
     "remote": {
@@ -21,7 +21,7 @@ config = {
     },
 
     "deploy": {
-        "dir": "Status",
+        "dir": "app",
         "pre": [
             "cat ~/.bashrc",
             "env"
@@ -78,6 +78,7 @@ config = {
 }
 
 path_list = [
+        './config.json',
         './deployment/production.json',
         './deployment/development.json',
         './src/conf/deploy.json',

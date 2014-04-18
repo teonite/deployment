@@ -123,8 +123,7 @@ def main():
             usage(commands)
             # print("Test")
             return 0
-
-        commands[sys.argv[1]].run(sys.argv[2:])
+        commands[sys.argv[1]].run(*sys.argv[2:])
 
         # if len(sys.argv) == 1:
         #     deploy(config_f, '')

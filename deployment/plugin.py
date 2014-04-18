@@ -21,7 +21,7 @@ class Plugin(object):
     def validate_config(self):
         raise NotImplementedError()
 
-    def run(self, **kwargs):
+    def run(self, *args, **kwargs):
         self.validate_config()
         raise NotImplementedError()
 
