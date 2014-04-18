@@ -22,95 +22,6 @@ from deployment.common import *
 from deployment.plugin import Plugin
 
 
-def validate_config(config, section):
-    pretty_print("Validating %s config section" % section, 'debug')
-
-    if section == 'source':
-        if not 'source' in config:
-            raise NotConfiguredError("Source section does not exists")
-
-        if not 'git' in config['source']:
-            raise NotConfiguredError("Section \"git\" does not exists")
-
-        if not 'dirs' in config['source']['git']:
-            pretty_print("No dirs selected, archiving whole repo", "info")
-            config['source']['git']['dirs'] = []
-
-        if not 'repo' in config['source']['git'] or not len(config['source']['git']['repo']):
-            raise NotConfiguredError("Repository not set")
-
-        if not 'branch' in config['source']['git'] or not len(config['source']['git']['branch']):
-            pretty_print("Repository branch not set. Clone from \"master\"", 'info')
-            config['source']['git']['branch'] = 'master'
-
-        if not 'local' in config['source']['git']:
-            pretty_print("git local repo not set. Using current date as repo", 'info')
-            config['source']['git']['local'] = ""
-
-        if not 'local' in config['source'] or not len(config['source']['local']):
-            pretty_print("Local directory not set. Use current working directory", 'info')
-            config['source']['local'] = os.getcwd()
-        config['source']['local'] = os.path.expanduser(config['source']['local'])
-
-        if not 'file' in config['source'] or not len(config['source']['file']):
-            pretty_print("Archive file not set, using src.tar", 'info')
-            config['source']['file'] = 'deployment.tar.gz'
-
-        config['source']['file'] = os.path.expanduser(config['source']['file'])
-
-    elif section == 'remote':
-        if not 'remote' in config:
-            raise NotConfiguredError("Remote section does not exists")
-
-        if not 'host' in config['remote'] or not len(config['remote']['host']):
-            raise NotConfiguredError("Host not set.")
-
-        if not 'user' in config['remote'] or not len(config['remote']['user']):
-            raise NotConfiguredError("User not set.")
-
-        if not 'port' in config['remote']:
-            pretty_print("Port not set. Using 22", 'info')
-            config['remote']['port'] = 22
-        env.port = config['remote']['port']
-
-        if not 'dir' in config['remote']:
-            pretty_print("Dir not set. Using /tmp/ as default", 'info')
-            config['remote']['dir'] = "/tmp/"
-
-        if not 'clean' in config['remote']:
-            pretty_print("Clean not set. No clean by default", 'info')
-            config['remote']['clean'] = False
-
-    elif section == 'config':
-        if not 'config' in config:
-            raise NotConfiguredError('No section "config" in config.')
-
-        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
-            raise NotConfiguredError('No directory selected in deploy section.')
-
-        if not 'pre' in config['deploy']:
-            pretty_print("No pre-deploy commmands", "info")
-            config['deploy']['pre'] = []
-
-        if not type(config['deploy']['pre']) == type(list()):
-            raise Exception("Wrong format of 'pre' section - should be list")
-
-        if not 'post' in config['deploy']:
-            pretty_print("No post-deploy commmands", "info")
-            config['deploy']['post'] = []
-
-        if not type(config['deploy']['post']) == type(list()):
-            raise Exception("Wrong format of 'post' section - should be list")
-
-    elif section == 'deploy':
-        if not 'deploy' in config:
-            raise NotConfiguredError('No section "deploy" in config.')
-
-    pretty_print('Config is valid!', 'debug')
-
-    return config
-
-
 class SrcClone(Plugin):
     command = 'src_clone'
     config = None
@@ -571,170 +482,310 @@ class SrcRemoteConfig(Plugin):
                 pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
 
 
-def _src_remote_deploy(src_dir, dst_dir, user, host):
-    pretty_print("[+] Starting remote deployment", 'info')
+class SrcRemoteDeploy(Plugin):
+    command = 'src_remote_deploy'
+    config = None
+    description = 'Arguments: <subfolder> - deploys new version'
 
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
 
-    path = env.cwd
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
 
-    with cd(dst_dir):
-        with settings(warn_only=True):
-            if not run('test -L previous').failed:
-                run('rm -f previous')
-            pretty_print("current working dir: %s" % env.cwd)
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
 
-            if not run('test -L current').failed:
-                run('mv current previous')
-        run('ln -s %s current' % os.path.basename(src_dir))
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
 
-    pretty_print("[+] Remote deployment finished", 'info')
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
 
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
 
-def src_remote_deploy(config_f='config.json', directory=''):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-    config = validate_config(config, 'deploy')
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-    if not len(directory):
-        raise Exception("Source directory not provided.")
+        try:
+            src_dir = args[0]
+        except IndexError:
+            raise NotConfiguredError('You need to provide folder which will be deployed')
 
-    _src_remote_deploy(directory, config['deploy']['dir'], config['remote']['user'], config['remote']['host'])
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        dst_dir = config['deploy']['dir']
 
+        pretty_print("[+] Starting remote deployment", 'info')
 
-def _src_remote_rollback(dir, host, user):
-    pretty_print("[+] Starting remote rollback", 'info')
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
-    #	env.use_ssh_config = True
+        with cd(dst_dir):
+            with settings(warn_only=True):
+                if not run('test -L previous').failed:
+                    run('rm -f previous')
+                pretty_print("current working dir: %s" % env.cwd)
 
-    with cd(dir):
-        with settings(warn_only=True):
-            if run('test -L previous').failed:
-                pretty_print('Theres nothing to rollback. Returning.', 'info')
-                return
-        run('mv current current.prerollback')
-        run('mv previous current')
-    pretty_print("[+] Remote rollback finished", 'info')
+                if not run('test -L current').failed:
+                    run('mv current previous')
+            run('ln -s %s current' % os.path.basename(src_dir))
 
-
-def src_remote_rollback(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-    config = validate_config(config, 'deploy')
-
-    _src_remote_rollback(config['deploy']['dir'], config['remote']['host'], config['remote']['user'])
-
-
-def _src_pre_deploy(command_list, user, host):
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
-
-    pretty_print("[+] Starting remote pre-deploy commands", 'info')
-
-    if not len(command_list):
-        pretty_print('Pre_deploy commands not provided', 'info')
-        return
-
-    _src_remote_test(env.user, env.host)
-    for i in command_list:
-        run(i)
-
-    pretty_print("[+] Remote pre-deploy command finished", 'info')
+        pretty_print("[+] Remote deployment finished", 'info')
 
 
-def src_pre_deploy(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-    config = validate_config(config, 'deploy')
+class SrcRemoteRollback(Plugin):
+    command = 'src_remote_rollback'
+    config = None
+    description = 'Arguments: None - backs to previous version'
 
-    _src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
+
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        remote_dir = config['deploy']['dir']
+
+        pretty_print("[+] Starting remote rollback", 'info')
+
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+        #	env.use_ssh_config = True
+
+        with cd(remote_dir):
+            with settings(warn_only=True):
+                if run('test -L previous').failed:
+                    pretty_print('Theres nothing to rollback. Returning.', 'info')
+                    return
+            run('mv current current.prerollback')
+            run('mv previous current')
 
 
-def _src_post_deploy(command_list, user, host):
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+class SrcPreDeploy(Plugin):
+    command = 'src_pre_deploy'
+    config = None
+    description = 'Arguments: None - runs pre_deploy command from config file'
 
-    pretty_print("[+] Starting remote post-deploy commands", 'info')
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
 
-    if not len(command_list):
-        pretty_print('Post_deploy commands not provided', 'info')
-        return
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
 
-    _src_remote_test(env.user, env.host)
-    for i in command_list:
-        run(i)
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
 
-    pretty_print("[+] Remote post-deploy command finished", 'info')
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
+
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        command_list = config['deploy']['pre']
+
+        env.host = host
+        env.user = user
+        env.port = port
+
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+
+        pretty_print("[+] Starting remote pre-deploy commands", 'info')
+
+        if not len(command_list):
+            pretty_print('Pre_deploy commands not provided', 'info')
+            return
+
+        SrcRemoteCheck(config).run()
+
+        for i in command_list:
+            run(i)
+
+        pretty_print("[+] Remote pre-deploy command finished", 'info')
 
 
-def src_post_deploy(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-    config = validate_config(config, 'deploy')
+class SrcPostDeploy(Plugin):
+    command = 'src_post_deploy'
+    config = None
+    description = 'Arguments: None - runs post_deploy command from config file'
 
-    _src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
+
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        command_list = config['deploy']['post']
+
+        env.host = host
+        env.user = user
+        env.port = port
+
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+
+        pretty_print("[+] Starting remote post-deploy commands", 'info')
+
+        if not len(command_list):
+            pretty_print('Post_deploy commands not provided', 'info')
+            return
+
+        SrcRemoteCheck(config).run()
+
+        for i in command_list:
+            run(i)
+
+        pretty_print("[+] Remote post-deploy command finished", 'info')
 
 
-def _deploy(config, subdir=''):
-    pretty_print("[+] Starting deployment.", 'info')
+class Deploy(Plugin):
+    command = 'deploy'
+    config = None
+    description = 'Arguments: <local_subfolder> - deploys new version'
 
-    try:
-        if not config:
-            raise NotConfiguredError('Deploy - config not provided')
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
 
-        date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
 
-        if len(subdir):
-            repo = subdir
-            pretty_print('using provided subdir')
-        else:
-            if len(config['source']['git']['local']):
-                repo = config['source']['git']['local']
-                pretty_print("using config['source']['git']['local']")
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
+
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            subdir = args[0]
+        except IndexError:
+            subdir = ''
+
+        pretty_print("[+] Starting deployment.", 'info')
+
+        try:
+            if not config:
+                raise NotConfiguredError('Deploy - config not provided')
+
+            date = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            if len(subdir):
+                repo = subdir
+                pretty_print('using provided subdir')
             else:
-                repo = date
-                pretty_print("using date")
+                if len(config['source']['git']['local']):
+                    repo = config['source']['git']['local']
+                    pretty_print("using config['source']['git']['local']")
+                else:
+                    repo = date
+                    pretty_print("using date")
 
-        _src_remote_test(config['remote']['user'], config['remote']['host'])
-        _src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
-        _src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
-        _src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo,
-                     config['source']['git']['dirs'])
-        _src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'],
-                    config['remote']['host'], config['remote']['dir'])
-        _src_remote_extract(config['source']['file'], config['remote']['dir'],
-                            os.path.join(config['deploy']['dir'], date), config['remote']['user'],
-                            config['remote']['host'])
-        _src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'],
-                           config['remote']['user'], config['remote']['host'])
-        _src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
-        _src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
+            # _src_remote_test(config['remote']['user'], config['remote']['host'])
+            SrcRemoteCheck(config).run()
+            # _src_pre_deploy(config['deploy']['pre'], config['remote']['user'], config['remote']['host'])
+            SrcPreDeploy(config).run()
+            # _src_clone(config['source']['local'], config['source']['git']['branch'], config['source']['git']['repo'], repo)
+            SrcClone(config).run()
+            # _src_prepare(config['source']['file'], config['source']['local'], config['source']['git']['branch'], repo,
+            #              config['source']['git']['dirs'])
+            SrcPrepare(config).run()
+            # _src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'],
+            #             config['remote']['host'], config['remote']['dir'])
+            SrcUpload(config).run()
+            # _src_remote_extract(config['source']['file'], config['remote']['dir'],
+            #                     os.path.join(config['deploy']['dir'], date), config['remote']['user'],
+            #                     config['remote']['host'])
+            SrcRemoteExtract(config).run()
+            # _src_remote_deploy(os.path.join(config['deploy']['dir'], date), config['deploy']['dir'],
+            #                    config['remote']['user'], config['remote']['host'])
+            SrcRemoteDeploy(config).run()
+            # _src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
+            SrcRemoteConfig(config).run()
+            # _src_post_deploy(config['deploy']['post'], config['remote']['user'], config['remote']['host'])
+            SrcPostDeploy(config).run()
 
-        pretty_print('Cleaning flag: %s' % config['remote']['clean'])
-        if config['remote']['clean']:
-            _src_clean(config['source']['local'], config['source']['file'], date)
-        else:
-            pretty_print('Cleaning not selected, omitting.', 'info')
-        pretty_print("[+] Deployment finished.", 'info')
-    except:
-        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-        pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
+            pretty_print('Cleaning flag: %s' % config['remote']['clean'])
+            if config['remote']['clean']:
+                clean = SrcClean(config)
+                clean.run(config['source']['file'])
+                clean.run(date)
+            else:
+                pretty_print('Cleaning not selected, omitting.', 'info')
+            pretty_print("[+] Deployment finished.", 'info')
 
-
-def deploy(config_f='config.json', subfolder=''):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-    config = validate_config(config, 'deploy')
-    config = validate_config(config, 'config')
-    config = validate_config(config, 'source')
-
-    pretty_print("Deploy subfolder: %s" % subfolder)
-
-    _deploy(config, subfolder)
+        except:
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
