@@ -38,7 +38,7 @@ def find_plugins():
         find all files in the plugin directory and imports them
     """
     plugin_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "plugins")
-    print plugin_dir
+    # print plugin_dir
     plugin_files = [x[:-3] for x in os.listdir(plugin_dir) if x.endswith(".py")]
     sys.path.insert(0, plugin_dir)
 

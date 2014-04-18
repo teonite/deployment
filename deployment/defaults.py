@@ -13,8 +13,8 @@ config = {
     },
 
     "remote": {
-        "host": "192.168.56.101",
-        "user": "kkrzysztofik",
+        "host": "",
+        "user": "",
         "port": 22,
         "dir": "~",
         "clean": True
@@ -22,49 +22,27 @@ config = {
 
     "deploy": {
         "dir": "app",
-        "pre": [
-            "cat ~/.bashrc",
-            "env"
-        ],
-        "post": [
-            "pip install -r ~/Status/current/src/requirements.txt",
-            "python ~/Status/current/src/tools/manage.py collectstatic --noinput"
-        ]
+        "pre": [],
+        "post": []
     },
 
     "config": {
-        "gunicorn": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/gunicorn.conf.py",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/gunicorn.conf.py"
-        },
-        "supervisor": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/supervisor.conf",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/supervisor.conf"
-        },
-        "localsettings": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/localsettings.py",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/localsettings.py"
-        },
-        "logger": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/logger.conf",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/logger.conf"
-        }
     },
 
     "mysql": {
         "server": {
             "host": "localhost",
             "user": "root",
-            "password": "pass",
+            "password": "",
             "port": 3306,
-            "database": "status"
+            "database": ""
         },
         "shell": {
             "dumpfile": "temp.sql",
-            "user": "kkrzysztofik",
-            "host": "192.168.56.101",
+            "user": "",
+            "host": "",
             "port": 22,
-            "migration_dir": "test"
+            "migration_dir": ""
         }
     },
 

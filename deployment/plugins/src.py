@@ -137,25 +137,33 @@ class SrcClone(Plugin):
 
         if not 'local' in config['source']['git']:
             pretty_print("git local repo not set. Using current folder as repo", 'info')
-            config['source']['git']['local'] = ""
+            config['source']['git']['local'] = os.getcwd()
+
+        config['source']['git']['local'] = os.path.expanduser(config['source']['git']['local'])
+
+        if not 'local' in config['source'] or not len(config['source']['local']):
+            pretty_print("Local directory not set. Use current working directory", 'info')
+            config['source']['local'] = os.getcwd()
+        config['source']['local'] = os.path.expanduser(config['source']['local'])
 
     def run(self, *args, **kwargs):
         self.validate_config()
 
         try:
-            directory = args[0]
+            local_directory = args[0]
         except IndexError:
-            directory = config['source']['local']
+            local_directory = config['source']['local']
 
         try:
-            branch = args[1]
+            repo_directory = args[1]
         except IndexError:
-            branch = config['source']['git']['branch']
+            repo_directory = config['source']['git']['local']
 
+        branch = config['source']['git']['branch']
         repo = config['source']['git']['repo']
 
         env.host_string = 'localhost'
-        pretty_print('[+] Repository clone start: %s' % directory, 'info')
+        pretty_print('[+] Repository clone start: %s' % local_directory, 'info')
 
         # if not len(directory):
         #     pretty_print('Directory not selected, assuming current one.', 'info')
@@ -170,17 +178,17 @@ class SrcClone(Plugin):
             # except:
             #     raise Exception('Cannot create directory %s, please create the folder manually' % directory)
 
-        # old_dir = os.getcwd()
-        # os.chdir(directory)
+        old_dir = os.getcwd()
+        os.chdir(local_directory)
 
         try:
-            if not os.path.isdir("%s/.git" % directory):  # repo = Repo(dir)
-                if os.path.isdir(directory):
+            if not os.path.isdir("%s/.git" % repo_directory):  # repo = Repo(dir)
+                if os.path.isdir(repo_directory):
                     raise IOError('Directory already exists and is not repository. Clone will fail. Please check your '
                                   'configuration')
                 raise InvalidGitRepositoryError()
 
-            repo = Repo(directory)
+            repo = Repo(repo_directory)
 
             pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
 
@@ -189,7 +197,7 @@ class SrcClone(Plugin):
             if len(repo) == 0:
                 pretty_print('Repository not selected. Returning.', 'info')
                 raise InvalidGitRepositoryError
-            repo = Repo.clone_from(repo, directory)
+            repo = Repo.clone_from(repo, repo_directory)
 
         if not len(branch):
             branch = repo.active_branch
@@ -205,7 +213,7 @@ class SrcClone(Plugin):
         repo.git.submodule("init")
         repo.submodule_update(init=True)
 
-        # os.chdir(old_dir)
+        os.chdir(old_dir)
         #repo.create_remote('origin', config.GIT_REPO)
 
         pretty_print('[+] Repository clone finished', 'info')
@@ -238,25 +246,30 @@ class SrcPrepare(Plugin):
         config['source']['file'] = os.path.expanduser(config['source']['file'])
 
     def run(self, *args, **kwargs):
+        self.validate_config()
+
         archive_file = config['source']['file']
         branch = config['source']['git']['branch']
         dirs = config['source']['git']['dirs']
 
         try:
-            directory = args[0]
+            local_directory = os.path.expanduser(args[0])
         except IndexError:
-            directory = config['source']['local']
+            local_directory = config['source']['local']
 
-        directory = os.path.expanduser(directory)
+        try:
+            repo_directory = os.path.expanduser(args[1])
+        except IndexError:
+            repo_directory = config['source']['git']['local']
 
         env.host_string = 'localhost'
         pretty_print('[+] Archive prepare start. Branch: %s' % branch, 'info')
 
         old_dir = os.getcwd()
-        os.chdir(directory)
+        os.chdir(local_directory)
 
         try:
-            repo = Repo(directory)
+            repo = Repo(repo_directory)
             pretty_print('Repository found.', 'info')
         except InvalidGitRepositoryError:  # Repo doesn't exists
             raise NotConfiguredError('Repository not found. Please provide correct one.')
@@ -266,7 +279,7 @@ class SrcPrepare(Plugin):
         # compression = file.split('.')
         pretty_print("cwd: %s" % os.getcwd())
 
-        archiver = GitArchiver(main_repo_abspath=directory, include_dirs=dirs)
+        archiver = GitArchiver(main_repo_abspath=repo_directory, include_dirs=dirs)
         archiver.create(os.path.join(os.getcwd(), archive_file))
 
         # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
@@ -281,145 +294,281 @@ class SrcPrepare(Plugin):
         os.chdir(old_dir)
         pretty_print('[+] Archive prepare finished', 'info')
 
-def _src_upload(to_upload, user, host, directory):
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
-    pretty_print("[+] Starting file '%s' upload (to %s)" % (to_upload, directory), 'info')
+class SrcUpload(Plugin):
+    command = 'src_upload'
+    config = None
+    description = 'Arguments: none - upload packed file from local folder to remote host'
 
-    pretty_print('CWD: %s' % os.getcwd())
-    old_dir = os.getcwd()
+    def validate_config(self):
+        if not 'local' in config['source'] or not len(config['source']['local']):
+            pretty_print("Local directory not set. Use current working directory", 'info')
+            config['source']['local'] = os.getcwd()
+        config['source']['local'] = os.path.expanduser(config['source']['local'])
 
-    if not files.exists(directory):
-        pretty_print('Target directory not found, creating.', 'info')
-        run('mkdir -p %s' % directory)
-    else:
-        pretty_print('Target directory found, uploading.')
+        if not 'file' in config['source'] or not len(config['source']['file']):
+            pretty_print("Archive file not set, using src.tar.gz", 'info')
+            config['source']['file'] = 'src.tar.gz'
 
-    put(to_upload, "%s" % os.path.join(directory, os.path.basename(to_upload)))
-    pretty_print("[+] File upload finished", 'info')
-    os.chdir(old_dir)
+        config['source']['file'] = os.path.expanduser(config['source']['file'])
 
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
 
-def src_upload(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'source')
-    config = validate_config(config, 'remote')
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
 
-    _src_upload(os.path.join(config['source']['local'], config['source']['file']), config['remote']['user'],
-                config['remote']['host'], config['remote']['dir'])
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
 
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
 
-def _src_clean(directory, file, to_delete):
-    pretty_print('[+] Starting src_clean.', 'info')
-    old_dir = os.getcwd()
-    os.chdir(directory)
+        if not 'dir' in config['remote']:
+            pretty_print("Dir not set. Using /tmp/ as default", 'info')
+            config['remote']['dir'] = "/tmp/"
 
-    if os.path.isfile(file):
-        pretty_print('File %s found, deleting' % file, 'info')
-        os.remove(file)
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-    if os.path.isdir(to_delete):
-        pretty_print('Directory %s found, deleting.' % to_delete, 'info')
-        shutil.rmtree(to_delete)
+        to_upload = os.path.join(config['source']['local'], config['source']['file'])
+        user = config['remote']['user']
+        host = config['remote']['host']
+        remote_directory = config['remote']['dir']
 
-    os.chdir(old_dir)
-    pretty_print('[+] Finished src_clean.', 'info')
+        env.host = host
+        env.user = user
+        env.port = config['remote']['port']
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
+        pretty_print("[+] Starting file '%s' upload (to %s)" % (to_upload, remote_directory), 'info')
 
-def _src_remote_test(user, host):
-    pretty_print("[+] Starting remote test", "info")
+        pretty_print('CWD: %s' % os.getcwd())
+        old_dir = os.getcwd()
 
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
-    #	env.use_ssh_config = True
-
-    run('exit 0')
-    pretty_print('[+] Remote test finished', 'info')
-
-
-def src_remote_test(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'remote')
-
-    _src_remote_test(config['remote']['user'], config['remote']['host'])
-
-
-def _src_remote_extract(file, file_dir, dest_dir, user, host):
-    pretty_print("[+] Starting remote extract", 'info')
-    pretty_print("Extracting to directory %s" % dest_dir)
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
-    #	env.use_ssh_config = True
-
-    date = datetime.now().strftime("%Y%m%d-%H%M%S")
-
-    if not files.exists(dest_dir, verbose=True):
-        pretty_print('Directory %s does not exists, creating' % dest_dir, 'info')
-        run('mkdir -p %s' % dest_dir)
-    else:
-        pretty_print('Directory %s exists, renaming to %s-%s' % (dest_dir, dest_dir, date), 'info')
-        run('mv %s %s-%s' % (dest_dir, dest_dir, date))
-        run('mkdir -p %s' % dest_dir)
-
-    #with cd(file_dir):
-    pretty_print('Extracting files', 'info')
-
-    compression = file.split('.')
-    if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
-        run('tar xvfz %s -C %s' % (os.path.join(file_dir, file), dest_dir))
-    # elif compression[-1] == "bz2" and compression[-2] == "tar":
-    # 	run('tar xvfj %s -C %s' % (os.path.join(file_dir, file), dest_dir))
-    elif compression[-1] == "tar":
-        run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
-    else:
-        raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
-
-    pretty_print("[+] Remote extract finished", 'info')
-
-
-def src_remote_extract(config_f='config.json', subfolder=datetime.now().strftime("%Y%m%d_%H%M%S")):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'source')
-    config = validate_config(config, 'remote')
-
-    #_src_remote_extract(config['file_name'], config['upload_dir'], config['extract_dir'], config['remote_user'], config['remote_host'])
-    #_src_remote_extract(config['source']['file'], config['upload_dir'], os.path.join(config['deploy_dir'], subfolder), config['remote_user'], config['remote_host'])
-    _src_remote_extract(config['source']['file'], config['remote']['dir'],
-                        os.path.join(config['deploy']['dir'], subfolder), config['remote']['user'],
-                        config['remote']['host'])
-
-
-def _src_remote_config(to_copy, user, host):
-    pretty_print("[+] Starting remote config copy", 'info')
-
-    env.host = host
-    env.user = user
-    env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
-    #	env.use_ssh_config = True
-
-    for key, value in to_copy.iteritems():
-        (head, tail) = os.path.split(value['dst'])
-        if not files.exists(head):
-            pretty_print('Target directory %s does not exists. Creating.' % head, 'info')
-            run('mkdir -p %s' % head)
-
-        if files.exists(value['src'], verbose=True):
-            pretty_print('Copying %s' % key, 'info')
-            run('cp -rf %s %s' % (value['src'], value['dst']))
+        if not files.exists(remote_directory):
+            pretty_print('Target directory not found, creating.', 'info')
+            run('mkdir -p %s' % remote_directory)
         else:
-            pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
+            pretty_print('Target directory found, uploading.')
+
+        put(to_upload, "%s" % os.path.join(remote_directory, os.path.basename(to_upload)))
+        pretty_print("[+] File upload finished", 'info')
+        os.chdir(old_dir)
 
 
-def src_remote_config(config_f='config.json'):
-    config = prepare_config(config_f)
-    config = validate_config(config, 'config')
-    config = validate_config(config, 'remote')
+class SrcClean(Plugin):
+    command = 'src_clean'
+    config = None
+    description = 'Arguments: <to_delete> - delete file/folder provided as argument'
 
-    _src_remote_config(config['config'], config['remote']['user'], config['remote']['host'])
+    def validate_config(self):
+        if not 'local' in config['source'] or not len(config['source']['local']):
+            pretty_print("Local directory not set. Use current working directory", 'info')
+            config['source']['local'] = os.getcwd()
+        config['source']['local'] = os.path.expanduser(config['source']['local'])
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            to_delete = args[0]
+        except IndexError:
+            raise NotConfiguredError("src_clean need arg 'to_delete' ")
+        local_directory = config['source']['local']
+
+        pretty_print('[+] Starting src_clean.', 'info')
+
+        old_dir = os.getcwd()
+        os.chdir(local_directory)
+
+        if os.path.isfile(to_delete):
+            pretty_print('File %s found, deleting' % to_delete, 'info')
+            os.remove(to_delete)
+
+        if os.path.isdir(to_delete):
+            pretty_print('Directory %s found, deleting.' % to_delete, 'info')
+            shutil.rmtree(to_delete)
+
+        os.chdir(old_dir)
+        pretty_print('[+] Finished src_clean.', 'info')
+
+
+class SrcRemoteCheck(Plugin):
+    command = 'src_remote_test'
+    config = None
+    description = 'Arguments: <user> <host> - test remote host'
+
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+    def run(self, *args, **kwargs):
+        try:
+            user = args[0]
+        except IndexError:
+            user = config['remote']['user']
+
+        try:
+            host = args[1]
+        except IndexError:
+            host = config['remote']['host']
+
+        pretty_print("[+] Starting remote test", "info")
+
+        env.host = host
+        env.user = user
+        env.port = config['remote']['port']
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+        #	env.use_ssh_config = True
+
+        run('exit 0')
+        pretty_print('[+] Remote test finished', 'info')
+
+
+class SrcRemoteExtract(Plugin):
+    command = 'src_remote_extract'
+    config = None
+    description = 'Arguments: <subfolder> - extract uploaded file to selected subfolder of deploy_dir, ' \
+                  'default current date'
+
+    def validate_config(self):
+        if not 'file' in config['source'] or not len(config['source']['file']):
+            pretty_print("Archive file not set, using src.tar", 'info')
+            config['source']['file'] = 'deployment.tar.gz'
+
+        config['source']['file'] = os.path.expanduser(config['source']['file'])
+
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'deploy' in config:
+            raise NotConfiguredError('No section "deploy" in config.')
+        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
+            config['deploy']['dir'] = 'app'
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            subfolder = args[0]
+        except IndexError:
+            subfolder = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        file = config['source']['file']
+        file_dir = config['remote']['dir']  # where file is uploaded
+        dest_dir = os.path.join(config['deploy']['dir'], subfolder)  # where should be unpacked
+
+        pretty_print("[+] Starting remote extract", 'info')
+        pretty_print("Extracting to directory %s" % dest_dir)
+        env.host = host
+        env.user = user
+        env.port = port
+
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+        #	env.use_ssh_config = True
+
+        date = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+        if not files.exists(dest_dir, verbose=True):
+            pretty_print('Directory %s does not exists, creating' % dest_dir, 'info')
+            run('mkdir -p %s' % dest_dir)
+        else:
+            pretty_print('Directory %s exists, renaming to %s-%s' % (dest_dir, dest_dir, date), 'info')
+            run('mv %s %s-%s' % (dest_dir, dest_dir, date))
+            run('mkdir -p %s' % dest_dir)
+
+        #with cd(file_dir):
+        pretty_print('Extracting files', 'info')
+
+        compression = file.split('.')
+        if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
+            run('tar xvfz %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+        # elif compression[-1] == "bz2" and compression[-2] == "tar":
+        # 	run('tar xvfj %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+        elif compression[-1] == "tar":
+            run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+        else:
+            raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
+
+
+class SrcRemoteConfig(Plugin):
+    command = 'src_remote_config'
+    config = None
+    description = 'Arguments: None - copy config from previous to current'
+
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'config' in config:
+            raise NotConfiguredError('No section "config" in config.')
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+        to_copy = config['config']
+
+        pretty_print("[+] Starting remote config copy", 'info')
+
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+        #	env.use_ssh_config = True
+
+        for key, value in to_copy.iteritems():
+            (head, tail) = os.path.split(value['dst'])
+            if not files.exists(head):
+                pretty_print('Target directory %s does not exists. Creating.' % head, 'info')
+                run('mkdir -p %s' % head)
+
+            if files.exists(value['src'], verbose=True):
+                pretty_print('Copying %s' % key, 'info')
+                run('cp -rf %s %s' % (value['src'], value['dst']))
+            else:
+                pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
 
 
 def _src_remote_deploy(src_dir, dst_dir, user, host):
