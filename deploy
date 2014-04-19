@@ -37,13 +37,13 @@ def usage(commands):
     print('Commands:')
     print(' If no command provided, deploy is run')
     for command in orderedDict:
-        print(' - %s - %s' % (commands[command].command, commands[command].description))
+        print('	- %s - %s' % (commands[command].command, commands[command].description))
 
     print(' ')
     print('Parameters: (optional)')
     print('	-c, --config <filename> - if not selected, config.json is selected')
     print('	-h, --help - display this message and exit')
-    print(' -r, --remote <user@host:port>')
+    print('	-r, --remote <user@host:port>')
 
 
 def get_config_file():
@@ -58,9 +58,10 @@ def get_config_file():
 
 def main():
     print_usage = None
+    remote_tuple = (None, None, None)
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:", ["help", "config="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:", ["help", "config=", "remote="])
 
         config_f = None
 
@@ -78,6 +79,11 @@ def main():
 
                 sys.argv.remove(o)
 
+            elif o in ["-r", "--remote"]:
+                remote_tuple = common.parse_remote(a)
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
             else:
                 print("\033[1mPararmeters %s %s unhandled\033[0m" % (o, a))
 
@@ -95,7 +101,7 @@ def main():
     #     print("CONFIG ERROR: Please provide correct one.\033[0m")
     #     return 1
 
-    config = common.prepare_config(config_f)
+    config = common.prepare_config(config_f, remote_tuple)
     common.prepare_logger(config)
     commands = plugin.init_plugins(config)
 
@@ -110,90 +116,9 @@ def main():
 
         if sys.argv[1] in ['usage', 'help'] or print_usage is not None:
             usage(commands)
-            # print("Test")
             return 0
-        commands[sys.argv[1]].run(*sys.argv[2:])
 
-        # if len(sys.argv) == 1:
-        #     deploy(config_f, '')
-        #     return)
-        # #pretty_print(sys.argv)
-        # s = sys.argv[1]
-        # if s == 'deploy':
-        #     if len(sys.argv) == 2:
-        #         deploy(config_f, '')
-        #     else:
-        #         deploy(config_f, sys.argv[2])
-        #
-        #     try:
-        #         restart_supervisor(config_f)
-        #     except NotConfiguredError:
-        #         pretty_print('Supervisor not configured, omitting', 'info')
-        #
-        # elif s == 'db_migrate':
-        #     if len(sys.argv) == 2:
-        #         db_migrate(config_f, None)
-        #     else:
-        #         db_migrate(config_f, sys.argv[2])
-        # elif s == 'src_clone':
-        #     if len(sys.argv) == 2:
-        #         src_clone(config_f)
-        #     elif len(sys.argv) == 3:
-        #         src_clone(config_f, sys.argv[2])
-        #     else:
-        #         src_clone(config_f, sys.argv[2], sys.argv[3])
-        # elif s == 'src_prepare':
-        #     if len(sys.argv) == 2:
-        #         src_prepare(config_f)
-        #     elif len(sys.argv) == 3:
-        #         src_prepare(config_f, sys.argv[2])
-        #     else:
-        #         src_prepare(config_f, sys.argv[2], sys.argv[3])
-        # elif s == 'src_upload':
-        #     src_upload(config_f)
-        # elif s == 'src_remote_test':
-        #     src_remote_test(config_f)
-        # elif s == 'src_remote_extract':
-        #     if len(sys.argv) == 2:
-        #         src_remote_extract(config_f)
-        #     elif len(sys.argv) == 3:
-        #         src_remote_extract(config_f, sys.argv[2])
-        # elif s == 'src_remote_config':
-        #     src_remote_config(config_f)
-        # elif s == 'src_remote_deploy':
-        #     if len(sys.argv) == 2:
-        #         raise Exception('Source folder not provided.')
-        #     else:
-        #         src_remote_deploy(config_f, sys.argv[2])
-        #
-        # elif s == 'src_remote_rollback':
-        #     src_remote_rollback(config_f)
-        # elif s == 'src_pre_deploy':
-        #     src_pre_deploy(config_f)
-        # elif s == 'src_post_deploy':
-        #     src_post_deploy(config_f)
-        # elif s == 'mysql_db_clone':
-        #     if len(sys.argv) == 2:
-        #         mysql_db_clone(config_f)
-        #     else:
-        #         mysql_db_clone(config_f, sys.argv[2])
-        # elif s == 'mysql_db_migrate':
-        #     if len(sys.argv) == 2:
-        #         raise Exception('Migration dir not provided, returning.')
-        #     mysql_db_migrate(sys.argv[2], config_f)
-        # elif s == 'mysql_db_dump':
-        #     mysql_db_dump(config_f)
-        # elif s == 'mysql_db_restore':
-        #     mysql_db_restore(config_f)
-        # elif s == 'mysql_dump_remove':
-        #     mysql_dump_remove(config_f)
-        # elif s == 'restart_supervisor':
-        #     if len(sys.argv) >= 3:
-        #         restart_supervisor(config_f, sys.argv[2:])
-        #     else:
-        #         restart_supervisor(config_f)
-        # else:
-        #     usage()
+        commands[sys.argv[1]].run(*sys.argv[2:])
     except KeyError:
         usage(commands)
     except SystemExit as ex:

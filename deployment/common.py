@@ -6,6 +6,7 @@
 #
 from __future__ import print_function
 
+import os
 import sys
 import logging
 import logging.config
@@ -14,6 +15,7 @@ import traceback
 
 from fabric.state import env
 from fabric.api import run
+from fabric.context_managers import contextmanager, prefix
 
 import defaults
 
@@ -134,20 +136,22 @@ def _parse_config(filename, section=None):
         return {}
 
 
-def prepare_config(config_f=None):
+def prepare_config(config_f=None, remote_tuple=None):
     global config
-    try:
-        if not config:
-            if not config_f:
-                config = _parse_config("config.json")
-            else:
-                config = _parse_config(config_f)
-        defaults.config.update(config)
-        config = defaults.config
-    except:
-        exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-        print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
-        pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+
+    if not config:
+        if not config_f:
+            config = _parse_config("config.json")
+        else:
+            config = _parse_config(config_f)
+    defaults.config.update(config)
+    config = defaults.config
+    if remote_tuple[0]:
+        config['remote']['user'] = remote_tuple[0]
+    if remote_tuple[1]:
+        config['remote']['host'] = remote_tuple[1]
+    if remote_tuple[2]:
+        config['remote']['port'] = remote_tuple[2]
 
     return config
 
@@ -158,3 +162,32 @@ def list_dir(dir_=None):
     string_ = run("for i in *; do echo $i; done")
     files = string_.replace("\r", "").split("\n")
     return files
+
+
+def parse_remote(remote_str):
+    user = None
+    host = None
+    port = None
+
+    if "@" in remote_str:
+        remote_split = remote_str.rsplit("@", 1)
+        user = remote_split[0]
+        host = remote_split[1]
+
+        if ":" in user:
+            user = user.split(":", 1)[0]
+        if ":" in host:
+            host_split = host.rsplit(":", 1)
+
+            host = host_split[0]
+            port = host_split[1]
+    else:
+        host = remote_str
+
+        if ":" in host:
+            host_split = host.rsplit(":", 1)
+
+            host = host_split[0]
+            port = host_split[1]
+
+    return user, host, port
