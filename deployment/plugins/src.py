@@ -729,6 +729,9 @@ class SrcRemoteVenv(Plugin):
     def run(self, *args, **kwargs):
         self.validate_config()
 
+        check = kwargs.get('check', True)
+        install = kwargs.get('install', True)
+
         user = config['remote']['user']
         host = config['remote']['host']
         port = config['remote']['port']
@@ -744,6 +747,8 @@ class SrcRemoteVenv(Plugin):
             return
 
         update_str = ""
+        if update:
+            update_str = "U"
 
         env.host = host
         env.user = user
@@ -755,19 +760,20 @@ class SrcRemoteVenv(Plugin):
 
         SrcRemoteCheck(config).run()
         pretty_print(venv_dir)
-        if not files.exists(venv_dir):
-            if update:
-                update_str = "U"
-            pretty_print("[+] Venv not exits, creating", 'info')
+        if check:
+            if not files.exists(venv_dir):
+                pretty_print("[+] Venv not exits, creating", 'info')
 
-            run('virtualenv {} -p /usr/bin/python2'.format(venv_dir))
+                run('virtualenv {} -p /usr/bin/python2'.format(venv_dir))
+            else:
+                pretty_print("[+] Venv already exists.", 'info')
+
+        if install:
             with source_virtualenv():
                 for req_file in requirements_files:
                     req_file = os.path.join(deploy_dir, 'current', req_file)
                     if files.exists("%s" % os.path.join(req_file)):
-                        run('pip install -r%s %s' % (update_str, os.path.join(req_file)))
-        else:
-            pretty_print("[+] Venv already exists.", 'info')
+                        run('pip install -r%s %s' % (update_str, req_file))
 
         pretty_print("[+] Remote venv check finished", 'info')
 
@@ -795,8 +801,10 @@ class Deploy(Plugin):
 
         date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        steps = [SrcRemoteCheck, SrcRemoteVenv, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
+        steps = [SrcRemoteCheck, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
                  SrcRemoteDeploy, SrcRemoteConfig, SrcPostDeploy]
+
+        SrcRemoteVenv(config).run(install=False)
 
         for step in steps:
             if step in [SrcRemoteExtract, SrcRemoteDeploy]:
@@ -804,15 +812,7 @@ class Deploy(Plugin):
             else:
                 step(config).run()
 
-        # SrcRemoteCheck(config).run()
-        # SrcPreDeploy(config).run()
-        # SrcClone(config).run()
-        # SrcPrepare(config).run()
-        # SrcUpload(config).run()
-        # SrcRemoteExtract(config).run(date)
-        # SrcRemoteDeploy(config).run(date)
-        # SrcRemoteConfig(config).run()
-        # SrcPostDeploy(config).run()
+        SrcRemoteVenv(config).run(check=False)
 
         pretty_print('Cleaning flag: %s' % config['remote']['clean'])
         if config['remote']['clean']:
