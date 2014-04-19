@@ -8,11 +8,12 @@
 
 from __future__ import print_function
 
-import getopt
-
-import sys
-from fabric.state import env
 import os
+import sys
+import getopt
+from collections import OrderedDict
+
+from fabric.state import env
 
 from deployment import plugin, common, defaults
 from deployment.common import pretty_print
@@ -23,6 +24,7 @@ env.use_ssh_config = True
 
 def usage(commands):
     from deployment.version import version
+    orderedDict = OrderedDict(sorted(commands.items()))
 
     print(' ')
     print('				TEONITE deployment and database migration tool')
@@ -34,31 +36,14 @@ def usage(commands):
     print(' ')
     print('Commands:')
     print(' If no command provided, deploy is run')
-    for command in commands:
+    for command in orderedDict:
         print(' - %s - %s' % (commands[command].command, commands[command].description))
-    # print('	- deploy <local_subfolder> - deploys new version')
-    # print('	- db_migrate <migration_folder> - migrate database to new version')
-    # print('	- src_clone <folder> <subfolder> - clone repo to subfolder in local folder')
-    # print('	- src_prepare <folder> <subfolder> - archive repo from subfolder in local folder to file')
-    # print('	- src_upload - upload packed file from local folder to remote host')
-    # print('	- src_remote_test - test remote host')
-    # print(' - src_remote_extract <subfolder> - extract uploaded file to selected subfolder of deploy_dir, '
-    #       'default current date')
-    # print('	- src_remote_config - copy config from previous to current')
-    # print('	- src_remote_deploy <subfolder> - deploys new version')
-    # print('	- src_remote_rollback - backs to previous version')
-    # print('	- src_pre_deploy - runs pre_deploy command from config file')
-    # print('	- src_post_deploy - runs post_deploy command from config file')
-    # print('	- mysql_db_clone <db_name> - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
-    # print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
-    # print('	- mysql_db_dump - dump database to selected file')
-    # print('	- mysql_db_restore - restore database from file')
-    # print('	- mysql_dump_remove - remove dump file from remote host')
-    # print('	- restart_supervisor <process_name> <process_name> ... - restart process in Supervisor')
+
     print(' ')
     print('Parameters: (optional)')
     print('	-c, --config <filename> - if not selected, config.json is selected')
     print('	-h, --help - display this message and exit')
+    print(' -r, --remote <user@host:port>')
 
 
 def get_config_file():
