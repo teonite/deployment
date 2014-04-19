@@ -191,3 +191,9 @@ def parse_remote(remote_str):
             port = host_split[1]
 
     return user, host, port
+
+
+@contextmanager
+def source_virtualenv():
+    with prefix('source ' + os.path.join(config['venv']['remote'], 'bin/activate')):
+        yield

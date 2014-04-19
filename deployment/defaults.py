@@ -3,7 +3,7 @@ __author__ = 'kkrzysztofik'
 config = {
     "source": {
         "git": {
-            "repo": ".",
+            "repo": "",
             "branch": "master",
             "local": ".",
             "dirs": []
@@ -24,6 +24,12 @@ config = {
         "dir": "app",
         "pre": [],
         "post": []
+    },
+
+    "venv": {
+        "dir": "",
+        "requirements": ["requirements/production.txt"],
+        "update": False
     },
 
     "config": {

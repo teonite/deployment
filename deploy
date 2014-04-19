@@ -101,11 +101,11 @@ def main():
     #     print("CONFIG ERROR: Please provide correct one.\033[0m")
     #     return 1
 
-    config = common.prepare_config(config_f, remote_tuple)
-    common.prepare_logger(config)
-    commands = plugin.init_plugins(config)
-
     try:
+        config = common.prepare_config(config_f, remote_tuple)
+        common.prepare_logger(config)
+        commands = plugin.init_plugins(config)
+
         if print_usage:
             usage(commands)
             return 0

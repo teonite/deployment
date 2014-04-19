@@ -7,7 +7,6 @@
 
 from __future__ import print_function
 
-import os
 import shutil
 from datetime import datetime
 
@@ -190,7 +189,7 @@ class SrcPrepare(Plugin):
         # compression = file.split('.')
         pretty_print("cwd: %s" % os.getcwd())
 
-        archiver = GitArchiver(main_repo_abspath=os.path.join(os.getcwd(), repo_directory), include_dirs=dirs) #
+        archiver = GitArchiver(main_repo_abspath=os.path.join(os.getcwd(), repo_directory), include_dirs=dirs)
         archiver.create(os.path.join(os.getcwd(), archive_file))
 
         # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
@@ -393,7 +392,7 @@ class SrcRemoteExtract(Plugin):
         user = config['remote']['user']
         host = config['remote']['host']
         port = config['remote']['port']
-        file = config['source']['file']
+        uploaded_file = config['source']['file']
         file_dir = config['remote']['dir']  # where file is uploaded
         dest_dir = os.path.join(config['deploy']['dir'], subfolder)  # where should be unpacked
 
@@ -419,13 +418,13 @@ class SrcRemoteExtract(Plugin):
         #with cd(file_dir):
         pretty_print('Extracting files', 'info')
 
-        compression = file.split('.')
+        compression = uploaded_file.split('.')
         if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
-            run('tar xvfz %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+            run('tar xvfz %s -C %s' % (os.path.join(file_dir, uploaded_file), dest_dir))
         # elif compression[-1] == "bz2" and compression[-2] == "tar":
         # 	run('tar xvfj %s -C %s' % (os.path.join(file_dir, file), dest_dir))
         elif compression[-1] == "tar":
-            run('tar xvf %s -C %s' % (os.path.join(file_dir, file), dest_dir))
+            run('tar xvf %s -C %s' % (os.path.join(file_dir, uploaded_file), dest_dir))
         else:
             raise Exception("Unknown file format. Supported: tar, tar.gz, tgz")
 
@@ -700,6 +699,79 @@ class SrcPostDeploy(Plugin):
         pretty_print("[+] Remote post-deploy command finished", 'info')
 
 
+class SrcRemoteVenv(Plugin):
+    command = 'src_remote_venv'
+    config = None
+    description = 'Arguments: None - check if venv exists, if not it will be created, and populated with ' \
+                  'requirements.txt'
+
+    def validate_config(self):
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'host' in config['remote'] or not len(config['remote']['host']):
+            raise NotConfiguredError("Host not set.")
+
+        if not 'user' in config['remote'] or not len(config['remote']['user']):
+            raise NotConfiguredError("User not set.")
+
+        if not 'port' in config['remote']:
+            pretty_print("Port not set. Using 22", 'info')
+            config['remote']['port'] = 22
+        env.port = config['remote']['port']
+
+        if not 'venv' in config:
+            raise NotConfiguredError('No section "venv" in config.')
+
+        if not 'dir' in config['venv'] or not len(config['venv']['dir']):
+            config['venv']['dir'] = ""
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        user = config['remote']['user']
+        host = config['remote']['host']
+        port = config['remote']['port']
+
+        venv_dir = config['venv']['dir']
+        update = config['venv']['update']
+        requirements_files = config['venv']['requirements']
+
+        deploy_dir = config['deploy']['dir']
+
+        if not len(venv_dir):
+            pretty_print('[-] Venv dir not set. Returning.')
+            return
+
+        update_str = ""
+
+        env.host = host
+        env.user = user
+        env.port = port
+
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+
+        pretty_print("[+] Starting remote venv check", 'info')
+
+        SrcRemoteCheck(config).run()
+        pretty_print(venv_dir)
+        if not files.exists(venv_dir):
+            if update:
+                update_str = "U"
+            pretty_print("[+] Venv not exits, creating", 'info')
+
+            run('virtualenv {} -p /usr/bin/python2'.format(venv_dir))
+            with source_virtualenv():
+                for req_file in requirements_files:
+                    req_file = os.path.join(deploy_dir, 'current', req_file)
+                    if files.exists("%s" % os.path.join(req_file)):
+                        run('pip install -r%s %s' % (update_str, os.path.join(req_file)))
+        else:
+            pretty_print("[+] Venv already exists.", 'info')
+
+        pretty_print("[+] Remote venv check finished", 'info')
+
+
 class Deploy(Plugin):
     command = 'deploy'
     config = None
@@ -718,51 +790,35 @@ class Deploy(Plugin):
 
         pretty_print("[+] Starting deployment.", 'info')
 
-        try:
-            if not config:
-                raise NotConfiguredError('Deploy - config not provided')
+        if not config:
+            raise NotConfiguredError('Deploy - config not provided')
 
-            date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-            if len(subdir):
-                repo = subdir
-                pretty_print('using provided subdir')
+        steps = [SrcRemoteCheck, SrcRemoteVenv, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
+                 SrcRemoteDeploy, SrcRemoteConfig, SrcPostDeploy]
+
+        for step in steps:
+            if step in [SrcRemoteExtract, SrcRemoteDeploy]:
+                step(config).run(date)
             else:
-                if len(config['source']['git']['local']):
-                    repo = config['source']['git']['local']
-                    pretty_print("using config['source']['git']['local']")
-                else:
-                    repo = date
-                    pretty_print("using date")
+                step(config).run()
 
-            steps = [SrcRemoteCheck, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
-                     SrcRemoteDeploy, SrcRemoteConfig, SrcPostDeploy]
+        # SrcRemoteCheck(config).run()
+        # SrcPreDeploy(config).run()
+        # SrcClone(config).run()
+        # SrcPrepare(config).run()
+        # SrcUpload(config).run()
+        # SrcRemoteExtract(config).run(date)
+        # SrcRemoteDeploy(config).run(date)
+        # SrcRemoteConfig(config).run()
+        # SrcPostDeploy(config).run()
 
-            for step in steps:
-                if step in [SrcRemoteExtract, SrcRemoteDeploy]:
-                    step(config).run(date)
-                else:
-                    step(config).run()
-
-            # SrcRemoteCheck(config).run()
-            # SrcPreDeploy(config).run()
-            # SrcClone(config).run()
-            # SrcPrepare(config).run()
-            # SrcUpload(config).run()
-            # SrcRemoteExtract(config).run(date)
-            # SrcRemoteDeploy(config).run(date)
-            # SrcRemoteConfig(config).run()
-            # SrcPostDeploy(config).run()
-
-            pretty_print('Cleaning flag: %s' % config['remote']['clean'])
-            if config['remote']['clean']:
-                clean = SrcClean(config)
-                clean.run(config['source']['file'])
-                clean.run(date)
-            else:
-                pretty_print('Cleaning not selected, omitting.', 'info')
-            pretty_print("[+] Deployment finished.", 'info')
-
-        except:
-            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-            pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
+        pretty_print('Cleaning flag: %s' % config['remote']['clean'])
+        if config['remote']['clean']:
+            clean = SrcClean(config)
+            clean.run(config['source']['file'])
+            clean.run(date)
+        else:
+            pretty_print('Cleaning not selected, omitting.', 'info')
+        pretty_print("[+] Deployment finished.", 'info')
