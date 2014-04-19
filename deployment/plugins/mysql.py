@@ -17,218 +17,378 @@ from fabric.state import env
 from fabric.api import run
 from fabric.contrib import files
 
-from common import *
+from deployment.common import *
+from deployment.plugin import Plugin
 
-def validate_config(config, section):
 
-	pretty_print("Validating mysql config section: %s" % section, 'debug')
+class MySQLDumpRemove(Plugin):
+    command = 'mysql_dump_remove'
+    config = None
+    description = 'Arguments: None - remove dump file from remote host'
 
-	if not 'mysql' in config:
-		raise NotConfiguredError("MySQL section does not exists")
+    def validate_config(self):
+        if not 'shell' in config['mysql']:
+            raise NotConfiguredError("shell section does not exists")
 
-	if section == "server":
-		if not 'server' in config['mysql']:
-			raise NotConfiguredError("server section does not exists")
+        if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['shell']['port'] = 22
+            env.port = config['mysql']['shell']['port']
 
-		if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
-			raise NotConfiguredError("host not set")
-		if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
-			raise NotConfiguredError("user not set")
-		if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
-			raise NotConfiguredError("password not set")
-		if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
-			pretty_print("port not set, using default one", "info")
-			config['mysql']['server']['port'] = 3306
-		if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
-			raise NotConfiguredError("database not set")
+        if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+            pretty_print("migration_dir not set, using default: dump.sql")
+            config['mysql']['shell']['migration_dir'] = "dump.sql"
 
-	elif section == "shell":
-		if not 'shell' in config['mysql']:
-			raise NotConfiguredError("shell section does not exists")
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-		if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
-			raise NotConfiguredError("host not set")
-		if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
-			raise NotConfiguredError("user not set")
-		if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
-			pretty_print("port not set, using default one", "info")
-			config['mysql']['shell']['port'] = 22
-			env.port = config['mysql']['shell']['port']
+        user = config['mysql']['shell']['user']
+        host = config['mysql']['shell']['host']
+        port = config['mysql']['shell']['port']
+        filename = config['mysql']['shell']['dumpfile']
 
-		if not 'migration_dir' in config['mysql']['shell'] or not len(config['mysql']['shell']['migration_dir']):
-			pretty_print("migration_dir not set, using default: ~/migrations")
-			config['mysql']['shell']['migration_dir'] = "~/migrations"
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
-		if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
-			pretty_print("migration_dir not set, using default: dump.sql")
-			config['mysql']['shell']['migration_dir'] = "dump.sql"
+        pretty_print("[+] Starting dump remove.", 'info')
 
-	pretty_print('Config is valid!', 'debug')
+        if files.exists(filename):
+            pretty_print('File %s found. Removing.' % filename)
+            run('rm %s' % filename)
+        else:
+            raise Exception('Dump file not found.')
 
-	return config
+        pretty_print("[+] Dump remove finished.", 'info')
 
-def _mysql_dump_remove(filename, host, host_user):
-	env.host = host
-	env.user = host_user
-	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
 
-	pretty_print("[+] Starting dump remove.", 'info')
+class MySQLDBDump(Plugin):
+    command = 'mysql_db_dump'
+    config = None
+    description = 'Arguments: <database> - dump database to selected file'
 
-	if files.exists(filename):
-		pretty_print('File %s found. Removing.' % filename)
-		run('rm %s' % filename)
-	else:
-		raise Exception('Dump file not found.')
+    def validate_config(self):
+        if not 'server' in config['mysql']:
+            raise NotConfiguredError("server section does not exists")
 
-	pretty_print("[+] Dump remove finished.", 'info')
+        if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
+            raise NotConfiguredError("password not set")
+        if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['server']['port'] = 3306
+        if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
+            raise NotConfiguredError("database not set")
 
-def mysql_dump_remove(config_f = 'config.json'):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
+        if not 'shell' in config['mysql']:
+            raise NotConfiguredError("shell section does not exists")
 
-	_mysql_dump_remove(config['mysql']['shell']['dumpfile'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
+        if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['shell']['port'] = 22
+            env.port = config['mysql']['shell']['port']
 
-def	_mysql_db_dump(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	env.host = host
-	env.user = host_user
-	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
+        if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+            pretty_print("migration_dir not set, using default: dump.sql")
+            config['mysql']['shell']['migration_dir'] = "dump.sql"
 
-	pretty_print('[+] Starting MySQL dump.', 'info')
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-	with hide('running'):
-		pretty_print('Running mysqldump.', 'info')
-		run('mysqldump -u%s -p%s -h%s %s > %s' %(dbuser, dbpassword, dbhost, database, filename))
-	pretty_print('[+] MySQL dump finished.', 'info')
+        try:
+            database = args[0]
+        except IndexError:
+            database = config['mysql']['server']['database']
 
-def mysql_db_dump(config_f = 'config.json'):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
-	config = validate_config(config, "server")
+        user = config['mysql']['shell']['user']
+        host = config['mysql']['shell']['host']
+        port = config['mysql']['shell']['port']
+        filename = config['mysql']['shell']['dumpfile']
 
-	_mysql_db_dump(config['mysql']['shell']['dumpfile'], config['mysql']['server']['database'], config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
+        dbhost = config['mysql']['server']['host']
+        dbuser = config['mysql']['server']['user']
+        dbpassword = config['mysql']['server']['password']
 
-def	_mysql_db_restore(filename, database, dbhost, dbuser, dbpassword, host, host_user):
-	env.host = host
-	env.user = host_user
-	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
-	pretty_print('[+] Starting MySQL restore.', 'info')
+        pretty_print('[+] Starting MySQL dump.', 'info')
 
-#	env.use_ssh_config = True
-	with hide('running'):
-		pretty_print('Restoring to %s from %s' % (database, filename), 'info')
-		run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
-	pretty_print('[+] MySQL restore finished.', 'info')
+        with hide('running'):
+            pretty_print('Running mysqldump.', 'info')
+            run('mysqldump -u%s -p%s -h%s %s > %s' % (dbuser, dbpassword, dbhost, database, filename))
+        pretty_print('[+] MySQL dump finished.', 'info')
 
-def mysql_db_restore(config_f = 'config.json'):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
-	config = validate_config(config, "server")
 
-	_mysql_db_restore(config['mysql']['shell']['dumpfile'], config['mysql']['server']['database'], config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
+class MySQLDBRestore(Plugin):
+    command = 'mysql_db_restore'
+    config = None
+    description = 'Arguments: <database> - restore database from file'
 
-def	_mysql_db_clone(database, dbhost, dbuser, dbpassword, host, host_user, dumpfile='temp.sql'):
-	env.host = host
-	env.user = host_user
-	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
-	#	env.use_ssh_config = True
+    def validate_config(self):
+        if not 'server' in config['mysql']:
+            raise NotConfiguredError("server section does not exists")
 
-	pretty_print('[+] Starting MySQL clone.', 'info')
+        if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
+            raise NotConfiguredError("password not set")
+        if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['server']['port'] = 3306
+        if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
+            raise NotConfiguredError("database not set")
 
-	new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
+        if not 'shell' in config['mysql']:
+            raise NotConfiguredError("shell section does not exists")
 
-	with hide('running'):
-		_mysql_db_dump(dumpfile, database, dbhost, dbuser, dbpassword, host, host_user)
-		pretty_print('Creating new database: %s' % new_database)
-		run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
-											'\"CREATE DATABASE %s\"' % new_database))
-		_mysql_db_restore(dumpfile, new_database, dbhost, dbuser, dbpassword, host, host_user)
+        if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['shell']['port'] = 22
+            env.port = config['mysql']['shell']['port']
 
-	pretty_print('[+] MySQL clone finished.', 'info')
+        if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+            pretty_print("migration_dir not set, using default: dump.sql")
+            config['mysql']['shell']['migration_dir'] = "dump.sql"
 
-def mysql_db_clone(config_f = 'config.json', database = ''):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
-	config = validate_config(config, "server")
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-	if not len(database):
-		pretty_print("Database name not provided, assuming database from config.", "info")
-		_mysql_db_clone(config['mysql']['server']['database'], config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'], config['mysql']['shell']['dumpfile'])
-	else:
-		_mysql_db_clone(database, config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'], config['mysql']['shell']['dumpfile'])
+        try:
+            database = args[0]
+        except IndexError:
+            database = config['mysql']['server']['database']
 
-def	_mysql_db_migrate(database, dir, dbhost, dbuser, dbpassword, host, host_user, remote_dir):
-	env.host = host
-	env.user = host_user
-	env.host_string = "%s@%s:%s" %(env.user,env.host,env.port)
+        user = config['mysql']['shell']['user']
+        host = config['mysql']['shell']['host']
+        port = config['mysql']['shell']['port']
+        filename = config['mysql']['shell']['dumpfile']
+        dbhost = config['mysql']['server']['host']
+        dbuser = config['mysql']['server']['user']
+        dbpassword = config['mysql']['server']['password']
 
-	pretty_print('[+] Starting MySQL migrate', 'info')
-#	env.use_ssh_config = True
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
 
-	try:
-		date = datetime.now().strftime("%Y%m%d_%H%M%S")
-#		pretty_print("Current working directory: %s" % os.getcwd())
-		f = []
-		for (dirpath, dirname, filenames) in os.walk(dir):
-			f.extend(filenames)
-			break
-		f.sort()
-		pretty_print('Files: %s' % f)
-		os.chdir(dir)
-		remote_dir = os.path.join(remote_dir, date)
-		pretty_print('Creating directory %s' % remote_dir, 'info')
-		run('mkdir -p %s' % remote_dir)
-		for file in f:
-			pretty_print('Uploading file: %s' % file, 'info')
-			put(file, remote_dir)
+        pretty_print('[+] Starting MySQL restore.', 'info')
 
-		with cd(remote_dir):
-			for file in f:
-				pretty_print('Migrating file %s' % file, 'info')
-				with hide('running'):
-					run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, file))
-#			run('rm %s' % file)
+        #	env.use_ssh_config = True
+        with hide('running'):
+            pretty_print('Restoring to %s from %s' % (database, filename), 'info')
+            run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, filename))
+        pretty_print('[+] MySQL restore finished.', 'info')
 
-		pretty_print('[+] MySQL migrate finished.', 'info')
-	except:
-		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
-		raise Exception
 
-def mysql_db_migrate(migration_dir = None, config_f = 'config.json'):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
-	config = validate_config(config, "server")
+class MySQLDBClone(Plugin):
+    command = 'mysql_db_clone'
+    config = None
+    description = 'Arguments: <db_name> - clone db: <db_name> -> <db_name>_<current_date>_<current_time>'
 
-	if not migration_dir:
-		raise NotConfiguredError('Migration dir not set.')
+    def validate_config(self):
+        if not 'server' in config['mysql']:
+            raise NotConfiguredError("server section does not exists")
 
-	_mysql_db_migrate(config['mysql']['server']['database'], migration_dir, config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'], config['mysql']['shell']['migration_dir'])
+        if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
+            raise NotConfiguredError("password not set")
+        if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['server']['port'] = 3306
+        if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
+            raise NotConfiguredError("database not set")
 
-def	_db_migrate(config, migration_dir=None):
-	pretty_print("[+] Starting database migration.", 'info')
+        if not 'shell' in config['mysql']:
+            raise NotConfiguredError("shell section does not exists")
 
-	try:
-		if not config:
-			raise NotConfiguredError
+        if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['shell']['port'] = 22
+            env.port = config['mysql']['shell']['port']
 
-		_mysql_db_clone(config['mysql']['server']['database'], config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'], config['mysql']['shell']['dumpfile'])
-		if migration_dir:
-			pretty_print("Migration directory provided. Running.", 'info')
-			_mysql_db_migrate(config['mysql']['server']['database'], migration_dir, config['mysql']['server']['host'], config['mysql']['server']['user'], config['mysql']['server']['password'], config['mysql']['shell']['host'], config['mysql']['shell']['user'], config['mysql']['shell']['migration_dir'])
-		else:
-			pretty_print("No migration directory, omitting.", "info")
+        if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+            pretty_print("migration_dir not set, using default: dump.sql")
+            config['mysql']['shell']['migration_dir'] = "dump.sql"
 
-		_mysql_dump_remove(config['mysql']['shell']['dumpfile'], config['mysql']['shell']['host'], config['mysql']['shell']['user'])
+    def run(self, *args, **kwargs):
+        self.validate_config()
 
-		pretty_print("[+] Database migration finished.", 'info')
-	except:
-		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue))
+        try:
+            database = args[0]
+        except IndexError:
+            database = config['mysql']['server']['database']
 
-def db_migrate(config_f = 'config.json', migration_dir = None):
-	config = prepare_config(config_f)
-	config = validate_config(config, "shell")
-	config = validate_config(config, "server")
+        user = config['mysql']['shell']['user']
+        host = config['mysql']['shell']['host']
+        port = config['mysql']['shell']['port']
+        dbhost = config['mysql']['server']['host']
+        dbuser = config['mysql']['server']['user']
+        dbpassword = config['mysql']['server']['password']
 
-	_db_migrate(config, migration_dir)
+        env.host = host
+        env.user = user
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+
+        pretty_print('[+] Starting MySQL clone.', 'info')
+
+        new_database = '%s_%s' % (database, datetime.now().strftime("%Y%m%d_%H%M%S"))
+
+        with hide('running'):
+            MySQLDBDump(config).run(database)
+
+            pretty_print('Creating new database: %s' % new_database)
+            run('mysql -u%s -p%s -h%s %s <<< %s' % (dbuser, dbpassword, dbhost, database,
+                                                    '\"CREATE DATABASE %s\"' % new_database))
+            MySQLDBRestore(config).run(new_database)
+
+        pretty_print('[+] MySQL clone finished.', 'info')
+
+
+class MySQLDBMigrate(Plugin):
+    command = 'mysql_db_migrate'
+    config = None
+    description = 'Arguments: <migration_folder> - runs .sql files from selected folder'
+
+    def validate_config(self):
+        if not 'server' in config['mysql']:
+            raise NotConfiguredError("server section does not exists")
+
+        if not 'host' in config['mysql']['server'] or not len(config['mysql']['server']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['server'] or not len(config['mysql']['server']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'password' in config['mysql']['server'] or not len(config['mysql']['server']['password']):
+            raise NotConfiguredError("password not set")
+        if not 'port' in config['mysql']['server'] or not (type(config['mysql']['server']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['server']['port'] = 3306
+        if not 'database' in config['mysql']['server'] or not len(config['mysql']['server']['database']):
+            raise NotConfiguredError("database not set")
+
+        if not 'shell' in config['mysql']:
+            raise NotConfiguredError("shell section does not exists")
+
+        if not 'host' in config['mysql']['shell'] or not len(config['mysql']['shell']['host']):
+            raise NotConfiguredError("host not set")
+        if not 'user' in config['mysql']['shell'] or not len(config['mysql']['shell']['user']):
+            raise NotConfiguredError("user not set")
+        if not 'port' in config['mysql']['shell'] or not (type(config['mysql']['shell']['port']) == type(int)):
+            pretty_print("port not set, using default one", "info")
+            config['mysql']['shell']['port'] = 22
+            env.port = config['mysql']['shell']['port']
+
+        if not 'dumpfile' in config['mysql']['shell'] or not len(config['mysql']['shell']['dumpfile']):
+            pretty_print("migration_dir not set, using default: dump.sql")
+            config['mysql']['shell']['migration_dir'] = "dump.sql"
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            local_dir = args[0]
+        except IndexError:
+            raise NotConfiguredError("Please provide local migration dir")
+
+        remote_dir = config['mysql']['shell']['migration_dir']
+        user = config['mysql']['shell']['user']
+        host = config['mysql']['shell']['host']
+        port = config['mysql']['shell']['port']
+        dbhost = config['mysql']['server']['host']
+        dbuser = config['mysql']['server']['user']
+        dbpassword = config['mysql']['server']['password']
+
+        env.user = user
+        env.host = host
+        env.port = port
+        env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
+
+        pretty_print('[+] Starting MySQL migrate', 'info')
+        #	env.use_ssh_config = True
+
+        date = datetime.now().strftime("%Y%m%d_%H%M%S")
+        #		pretty_print("Current working directory: %s" % os.getcwd())
+        f = []
+        for (dirpath, dirname, filenames) in os.walk(local_dir):
+            f.extend(filenames)
+            break
+        f.sort()
+
+        pretty_print('Files: %s' % f)
+        os.chdir(local_dir)
+        remote_dir = os.path.join(remote_dir, date)
+        pretty_print('Creating directory %s' % remote_dir, 'info')
+        run('mkdir -p %s' % remote_dir)
+        for sql_file in f:
+            pretty_print('Uploading file: %s' % sql_file, 'info')
+            put(sql_file, remote_dir)
+
+        with cd(remote_dir):
+            for sql_file in f:
+                pretty_print('Migrating file %s' % sql_file, 'info')
+                with hide('running'):
+                    run('mysql -u%s -p%s -h%s %s < %s' % (dbuser, dbpassword, dbhost, database, sql_file))
+                #			run('rm %s' % file)
+
+        pretty_print('[+] MySQL migrate finished.', 'info')
+
+
+class DBMigrate(Plugin):
+    command = 'db_migrate'
+    config = None
+    description = 'Arguments: <migration_folder> - migrate database to new version'
+
+    def validate_config(self):
+        return True
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            migration_dir = args[0]
+        except IndexError:
+            raise NotConfiguredError("Please provide local migration dir")
+
+        pretty_print("[+] Starting database migration.", 'info')
+
+        if not config:
+            raise NotConfiguredError
+
+        MySQLDBClone(config).run()
+        if migration_dir:
+            pretty_print("Migration directory provided. Running.", 'info')
+            MySQLDBMigrate(config).run(migration_dir)
+        else:
+            pretty_print("No migration directory, omitting.", "info")
+
+        MySQLDumpRemove(config).run()
+
+        pretty_print("[+] Database migration finished.", 'info')

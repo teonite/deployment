@@ -706,25 +706,7 @@ class Deploy(Plugin):
     description = 'Arguments: <local_subfolder> - deploys new version'
 
     def validate_config(self):
-        if not 'remote' in config:
-            raise NotConfiguredError("Remote section does not exists")
-
-        if not 'host' in config['remote'] or not len(config['remote']['host']):
-            raise NotConfiguredError("Host not set.")
-
-        if not 'user' in config['remote'] or not len(config['remote']['user']):
-            raise NotConfiguredError("User not set.")
-
-        if not 'port' in config['remote']:
-            pretty_print("Port not set. Using 22", 'info')
-            config['remote']['port'] = 22
-        env.port = config['remote']['port']
-
-        if not 'deploy' in config:
-            raise NotConfiguredError('No section "deploy" in config.')
-
-        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
-            config['deploy']['dir'] = 'app'
+        return True
 
     def run(self, *args, **kwargs):
         self.validate_config()
