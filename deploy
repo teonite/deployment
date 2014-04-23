@@ -58,10 +58,11 @@ def get_config_file():
 
 def main():
     print_usage = None
+    run_venv = None
     remote_tuple = (None, None, None)
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:", ["help", "config=", "remote="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:V", ["help", "config=", "remote="])
 
         config_f = None
 
@@ -84,6 +85,12 @@ def main():
 
                 sys.argv.remove(o)
                 sys.argv.remove(a)
+
+            elif o in ["-V"]:
+                run_venv = True
+
+                sys.argv.remove(o)
+
             else:
                 print("\033[1mPararmeters %s %s unhandled\033[0m" % (o, a))
 
@@ -107,13 +114,18 @@ def main():
         commands = plugin.init_plugins(config)
 
         try:
+            if print_usage is not None or (len(sys.argv) > 1 and sys.argv[1] in ['usage', 'help']):
+                usage(commands)
+                return 0
+
+            if run_venv:
+                commands['src_remote_venv'].run()
+                return 0
+
             if len(sys.argv) == 1:
                 commands['deploy'].run()
                 return 0
 
-            if sys.argv[1] in ['usage', 'help'] or print_usage is not None:
-                usage(commands)
-                return 0
 
             commands[sys.argv[1]].run(*sys.argv[2:])
         except KeyError:
