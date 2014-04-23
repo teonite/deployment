@@ -637,8 +637,8 @@ class SrcPreDeploy(Plugin):
         if not 'deploy' in config:
             raise NotConfiguredError('No section "deploy" in config.')
 
-        if not 'dir' in config['deploy'] or not len(config['deploy']['dir']):
-            config['deploy']['dir'] = 'app'
+        if not 'pre' in config['deploy'] or not len(config['deploy']['pre']):
+            config['deploy']['pre'] = []
 
     def run(self, *args, **kwargs):
         self.validate_config()
@@ -781,7 +781,7 @@ class SrcRemoteVenv(Plugin):
 
         pretty_print("[+] Starting remote venv check", 'info')
 
-        SrcRemoteCheck(config).run()
+        # SrcRemoteCheck(config).run()
         pretty_print(venv_dir)
         if check:
             if not files.exists(venv_dir):
@@ -807,7 +807,12 @@ class Deploy(Plugin):
     description = 'Arguments: <local_subfolder> - deploys new version'
 
     def validate_config(self):
-        return True
+        if not 'remote' in config:
+            raise NotConfiguredError("Remote section does not exists")
+
+        if not 'clean' in config['remote']:
+            pretty_print("Clean flag not set, using True", 'info')
+            config['remote']['clean'] = True
 
     def run(self, *args, **kwargs):
         self.validate_config()

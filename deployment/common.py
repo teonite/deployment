@@ -23,7 +23,7 @@ LOGGING = {
     "version": 1,
     "formatters": {
         "simple": {
-            "format": "%(levelname)s %(message)s"
+            "format": "%(message)s"
         },
         "verbose": {
             "format": "[%(asctime)s] \"%(message)s\"",
@@ -35,7 +35,7 @@ LOGGING = {
         "console": {
             "level": "DEBUG",
             "class": "logging.StreamHandler",
-            "formatter": "verbose",
+            "formatter": "simple",
             "stream": "ext://sys.stdout"
         },
         "graypy": {
@@ -195,5 +195,5 @@ def parse_remote(remote_str):
 
 @contextmanager
 def source_virtualenv():
-    with prefix('source ' + os.path.join(config['venv']['remote'], 'bin/activate')):
+    with prefix('source ' + os.path.join(config['venv']['dir'], 'bin/activate')):
         yield

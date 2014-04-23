@@ -106,19 +106,21 @@ def main():
         common.prepare_logger(config)
         commands = plugin.init_plugins(config)
 
-        if print_usage:
-            usage(commands)
-            return 0
+        try:
+            if len(sys.argv) == 1:
+                commands['deploy'].run()
+                return 0
 
-        if len(sys.argv) == 1:
-            commands['deploy'].run()
-            return 0
+            if sys.argv[1] in ['usage', 'help'] or print_usage is not None:
+                usage(commands)
+                return 0
 
-        if sys.argv[1] in ['usage', 'help'] or print_usage is not None:
-            usage(commands)
-            return 0
+            commands[sys.argv[1]].run(*sys.argv[2:])
+        except KeyError:
+            exception_type, exception_value, exception_traceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+            return 1
 
-        commands[sys.argv[1]].run(*sys.argv[2:])
     except KeyError:
         usage(commands)
     except SystemExit as ex:
