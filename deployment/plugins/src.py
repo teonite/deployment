@@ -458,6 +458,7 @@ class SrcRemoteConfig(Plugin):
         user = config['remote']['user']
         host = config['remote']['host']
         port = config['remote']['port']
+        base_dir = config['deploy']['dir']
         to_copy = config['config']
 
         pretty_print("[+] Starting remote config copy", 'info')
@@ -467,18 +468,40 @@ class SrcRemoteConfig(Plugin):
         env.port = port
         env.host_string = "%s@%s:%s" % (env.user, env.host, env.port)
         #	env.use_ssh_config = True
+        if isinstance(to_copy, dict):
+            for key, value in to_copy.iteritems():
+                (head, tail) = os.path.split(value['dst'])
+                if not files.exists(head):
+                    pretty_print('Target directory %s does not exists. Creating.' % head, 'info')
+                    run('mkdir -p %s' % head)
 
-        for key, value in to_copy.iteritems():
-            (head, tail) = os.path.split(value['dst'])
-            if not files.exists(head):
-                pretty_print('Target directory %s does not exists. Creating.' % head, 'info')
-                run('mkdir -p %s' % head)
+                if files.exists(value['src'], verbose=True):
+                    pretty_print('Copying %s' % key, 'info')
+                    run('cp -rf %s %s' % (value['src'], value['dst']))
+                else:
+                    pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
+        elif isinstance(to_copy, list):
+            base_from = os.path.join(base_dir, 'previous')
+            base_to = os.path.join(base_dir, 'current')
 
-            if files.exists(value['src'], verbose=True):
-                pretty_print('Copying %s' % key, 'info')
-                run('cp -rf %s %s' % (value['src'], value['dst']))
-            else:
-                pretty_print('File does not exists: %s, ommiting' % value['src'], 'error')
+            for item in to_copy:
+                (path, filename) = os.path.split(item)
+                from_file = os.path.join(base_from, item)
+                to_file = os.path.join(base_to, item)
+                to_dir = os.path.join(base_to, path)
+
+                if not files.exists(to_dir):
+                    pretty_print('Target directory %s does not exists. Creating.' % path, 'info')
+                    run('mkdir -p %s' % to_dir)
+
+                if files.exists(from_file, verbose=True):
+                    pretty_print('Copying %s' % filename, 'info')
+                    run('cp -rf %s %s' % (from_file, to_file))
+                else:
+                    pretty_print('File does not exists: %s, ommiting' % filename, 'error')
+
+        else:
+            raise NotConfiguredError("Wrong 'config' section format")
 
 
 class SrcRemoteDeploy(Plugin):

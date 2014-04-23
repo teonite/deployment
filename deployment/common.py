@@ -136,7 +136,7 @@ def _parse_config(filename, section=None):
         return {}
 
 
-def prepare_config(config_f=None, remote_tuple=None):
+def prepare_config(config_f=None, remote_tuple=(None, None, None)):
     global config
 
     if not config:
