@@ -11,6 +11,18 @@ import tarfile
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
 #taken from https://raw.github.com/Kentzo/git-archive-all/master/git-archive-all
+# Copyright (C) 2012 Kentzo
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+# the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+# THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+# CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
 
 
 class GitArchiver(object):
@@ -75,10 +87,9 @@ class GitArchiver(object):
         self.main_repo_abspath = main_repo_abspath
 
         if include_dirs:
-            for directory in include_dirs:
-                directory = path.join(main_repo_abspath, dir)
-
-        self.include_dirs = include_dirs
+            self.include_dirs = " ".join(include_dirs)
+        else:
+            self.include_dirs = None
 
     def create(self, output_path, dry_run=False, output_format=None):
         """
@@ -269,8 +280,9 @@ class GitArchiver(object):
         @return:    Iterator to traverse files under git control relative to main_repo_abspath.
         """
         repo_abspath = path.join(self.main_repo_abspath, repo_path)
-        repo_file_paths = self.read_git_shell("git ls-files --cached --full-name --no-empty-directory",
-                                              repo_abspath if not self.include_dirs else self.include_dirs).splitlines()
+        repo_file_paths = self.read_git_shell("git ls-files --cached --full-name --no-empty-directory %s" % ("" if
+                                              not self.include_dirs else self.include_dirs),
+                                              repo_abspath).splitlines()
         exclude_patterns = self.get_exclude_patterns(repo_abspath, repo_file_paths)
 
         for repo_file_path in repo_file_paths:

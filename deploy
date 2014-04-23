@@ -7,222 +7,145 @@
 #
 
 from __future__ import print_function
-import __main__ as main
 
-import getopt
-
-import sys
-from fabric.state import env
 import os
+import sys
+import getopt
+from collections import OrderedDict
+
+from fabric.state import env
+
+from deployment import plugin, common, defaults
+from deployment.common import pretty_print
 
 env.host_string = 'localhost'
 env.use_ssh_config = True
 
-def usage():
-	from deployment.misc import version
-	print(' ')
-	print('				TEONITE deployment and database migration tool')
-	print('						version %s' % version)
-	print('					Copyright (C) 2012-2013 TEONITE')
-	print(' ')
-	print('Usage:')
-	print('	python %s <command> <parameter>' % os.path.basename(main.__file__))
-	print(' ')
-	print('Commands:')
-	print(' If no command provided, deploy is run')
-	print('	- deploy <local_subfolder> - deploys new version')
-	print('	- db_migrate <migration_folder> - migrate database to new version')
-	print('	- src_clone <folder> <subfolder> - clone repo to subfolder in local folder')
-	print('	- src_prepare <folder> <subfolder> - archive repo from subfolder in local folder to file')
-	print('	- src_upload - upload packed file from local folder to remote host')
-	print('	- src_remote_test - test remote host')
-	print('	- src_remote_extract <subfolder> - extract uploaded file to selected subfolder of deploy_dir, default current date')
-	print('	- src_remote_config - copy config from previous to current')
-	print('	- src_remote_deploy <subfolder> - deploys new version')
-	print('	- src_remote_rollback - backs to previous version')
-	print('	- src_pre_deploy - runs pre_deploy command from config file')
-	print('	- src_post_deploy - runs post_deploy command from config file')
-	print('	- mysql_db_clone <db_name> - clone db: <db_name> -> <db_name>_<current_date>_<current_time>')
-	print('	- mysql_db_migrate <migration_folder> - runs .sql files from selected folder')
-	print('	- mysql_db_dump - dump database to selected file')
-	print('	- mysql_db_restore - restore database from file')
-	print('	- mysql_dump_remove - remove dump file from remote host')
-	print('	- restart_supervisor <process_name> <process_name> ... - restart process in Supervisor')
-	print(' ')
-	print('Parameters: (optional)')
-	print('	-c, --config <filename> - if not selected, config.json is selected')
-	print('	-h, --help - display this message and exit')
+
+def usage(commands):
+    from deployment.version import version
+    orderedDict = OrderedDict(sorted(commands.items()))
+
+    print(' ')
+    print('				TEONITE deployment and database migration tool')
+    print('						version %s' % version)
+    print('					Copyright (C) 2012-2014 TEONITE')
+    print(' ')
+    print('Usage:')
+    print('	python %s <command> <parameter>' % os.path.basename(__file__))
+    print(' ')
+    print('Commands:')
+    print(' If no command provided, deploy is run')
+    for command in orderedDict:
+        print('	- %s - %s' % (commands[command].command, commands[command].description))
+
+    print(' ')
+    print('Parameters: (optional)')
+    print('	-c, --config <filename> - if not selected, config.json is selected')
+    print('	-h, --help - display this message and exit')
+    print('	-r, --remote <user@host:port>')
+
 
 def get_config_file():
-	path_list = [
-				'./deployment/production.json',
-				'./deployment/development.json',
-				'./src/conf/deploy.json',
-				'./src/conf/deployment.json',
-				'./src/settings/deploy.json',
-				'./src/settings/deployment.json',
-				'./conf/deploy.json',
-				'./conf/deployment.json',
-				'./settings/deploy.json',
-				'./settings/deployment.json',
-				'./src/conf/deployment/production.json',
-				'./src/settings/deployment/production.json',
-				'./conf/deployment/production.json',
-				'./settings/deployment/production.json'
-	]
-	for path in path_list:
-		if os.path.isfile(path):
-			# pretty_print("File found in %s" % path)
-			return path
+    for path in defaults.path_list:
+        if os.path.isfile(path):
+            # pretty_print("File found in %s" % path)
+            return path
 
-	print("Config file not found in default localizations.")
-	return None
+    print("Config file not found in default localizations.")
+    return None
+
+
+def main():
+    print_usage = None
+    run_venv = None
+    remote_tuple = (None, None, None)
+
+    try:
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:V", ["help", "config=", "remote="])
+
+        config_f = None
+
+        for o, a in opts:
+            if o in ["-c", "--config"]:
+                config_f = a
+                # pretty_print("-c found")
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
+
+            elif o in ["-h", "--help"]:
+                print_usage = True
+                # pretty_print("-c found")
+
+                sys.argv.remove(o)
+
+            elif o in ["-r", "--remote"]:
+                remote_tuple = common.parse_remote(a)
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
+
+            elif o in ["-V"]:
+                run_venv = True
+
+                sys.argv.remove(o)
+
+            else:
+                print("\033[1mPararmeters %s %s unhandled\033[0m" % (o, a))
+
+        if not config_f:
+            # pretty_print("Config not provided, searching for default one")
+            config_f = get_config_file()
+
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        pretty_print(str(err))  # will print something like "option -a not recognized"
+        return 1
+
+    # if not config_f or not os.path.isfile(config_f):
+    #     print("\033[1mCONFIG ERROR: Config file does not exists: %s" % config_f)
+    #     print("CONFIG ERROR: Please provide correct one.\033[0m")
+    #     return 1
+
+    try:
+        config = common.prepare_config(config_f, remote_tuple)
+        common.prepare_logger(config)
+        commands = plugin.init_plugins(config)
+
+        try:
+            if print_usage is not None or (len(sys.argv) > 1 and sys.argv[1] in ['usage', 'help']):
+                usage(commands)
+                return 0
+
+            if run_venv:
+                commands['src_remote_venv'].run()
+                return 0
+
+            if len(sys.argv) == 1:
+                commands['deploy'].run()
+                return 0
+
+
+            commands[sys.argv[1]].run(*sys.argv[2:])
+        except KeyError:
+            exception_type, exception_value, exception_traceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+            return 1
+
+    except KeyError:
+        usage(commands)
+    except SystemExit as ex:
+        if ex.code == 0:
+            return 0
+        else:
+            exception_type, exception_value, exception_traceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+            return 1
+    except:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+        return 1
 
 if __name__ == "__main__":
-	from deployment.mysql import *
-	from deployment.src import *
-	from deployment.supervisor import restart_supervisor
-	from deployment.misc import *
-
-	try:
-		opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:", ["help","config="])
-
-		config_f = None
-
-		for o, a in opts:
-			if o == "-c" or o == "--config":
-				config_f = a
-				# pretty_print("-c found")
-				i = 0
-				while sys.argv[i] != o:
-					i += 1
-				sys.argv.pop(i)
-
-				i = 0
-				while sys.argv[i] != a:
-					i += 1
-				sys.argv.pop(i)
-
-			elif o == "-h" or o == "--help":
-				usage()
-				# pretty_print("-c found")
-				i = 0
-				while sys.argv[i] != o:
-					i += 1
-				sys.argv.pop(i)
-				sys.exit(0)
-
-			else:
-				print("\033[1mPararmeters %s %s unhandled\033[0m" % (o,a))
-
-		if not config_f:
-			# pretty_print("Config not provided, searching for default one")
-			config_f = get_config_file()
-
-	except getopt.GetoptError as err:
-		# print help information and exit:
-		pretty_print(str(err)) # will print something like "option -a not recognized"
-		sys.exit(1)
-
-	try:
-		if sys.argv[1] == 'usage' or sys.argv[1] == 'help':
-			raise Exception()
-	except IndexError:
-		pass
-	except Exception:
-		usage()
-		# print("Test")
-		sys.exit(1)
-
-	if not config_f or not os.path.isfile(config_f):
-		print("\033[1mCONFIG ERROR: Config file does not exists: %s" % config_f)
-		print("CONFIG ERROR: Please provide correct one.\033[0m")
-		sys.exit(1)
-
-	prepare_logger(config_f)
-
-	try:
-		if len(sys.argv) == 1:
-			deploy(config_f, '')
-			sys.exit()
-		#pretty_print(sys.argv)
-		s = sys.argv[1]
-		if s == 'deploy':
-			if len(sys.argv) == 2:
-				deploy(config_f, '')
-			else:
-				deploy(config_f, sys.argv[2])
-
-			try:
-				restart_supervisor(config_f)
-			except NotConfiguredError:
-				pretty_print('Supervisor not configured, omitting', 'info')
-
-		elif s == 'db_migrate':
-			if len(sys.argv) == 2:
-				db_migrate(config_f, None)
-			else:
-				db_migrate(config_f, sys.argv[2])
-		elif s == 'src_clone':
-			if len(sys.argv) == 2:
-				src_clone(config_f)
-			elif len(sys.argv) == 3:
-				src_clone(config_f, sys.argv[2])
-			else:
-				src_clone(config_f, sys.argv[2], sys.argv[3])
-		elif s == 'src_prepare':
-			if len(sys.argv) == 2:
-				src_prepare(config_f)
-			elif len(sys.argv) == 3:
-				src_prepare(config_f, sys.argv[2])
-			else:
-				src_prepare(config_f, sys.argv[2], sys.argv[3])
-		elif s == 'src_upload':
-			src_upload(config_f)
-		elif s == 'src_remote_test':
-			src_remote_test(config_f)
-		elif s == 'src_remote_extract':
-			if len(sys.argv) == 2:
-				src_remote_extract(config_f)
-			elif len(sys.argv) == 3:
-				src_remote_extract(config_f, sys.argv[2])
-		elif s == 'src_remote_config':
-			src_remote_config(config_f)
-		elif s == 'src_remote_deploy':
-			if len(sys.argv) == 2:
-				raise Exception('Source folder not provided.')
-			else:
-				src_remote_deploy(config_f, sys.argv[2])
-
-		elif s == 'src_remote_rollback':
-			src_remote_rollback(config_f)
-		elif s == 'src_pre_deploy':
-			src_pre_deploy(config_f)
-		elif s == 'src_post_deploy':
-			src_post_deploy(config_f)
-		elif s == 'mysql_db_clone':
-			if len(sys.argv) == 2:
-				mysql_db_clone(config_f)
-			else:
-				mysql_db_clone(config_f, sys.argv[2])
-		elif s == 'mysql_db_migrate':
-			if len(sys.argv) == 2:
-				raise Exception('Migration dir not provided, returning.')
-			mysql_db_migrate(sys.argv[2], config_f)
-		elif s == 'mysql_db_dump':
-			mysql_db_dump(config_f)
-		elif s == 'mysql_db_restore':
-			mysql_db_restore(config_f)
-		elif s == 'mysql_dump_remove':
-			mysql_dump_remove(config_f)
-		elif s == 'restart_supervisor':
-			if len(sys.argv) >= 3:
-				restart_supervisor(config_f, sys.argv[2:])
-			else:
-				restart_supervisor(config_f)
-		else:
-			usage()
-	except:
-		exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
-		pretty_print("Something went wrong. Message: %s - %s" % (exceptionType, exceptionValue), 'error')
-		sys.exit(1)
+    main()
