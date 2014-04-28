@@ -38,24 +38,12 @@ The config is in JSON format::
             ]
         },
 
-        "config": {
-            "gunicorn": {
-                "src": "/home/kkrzysztofik/Status/previous/src/settings/gunicorn.conf.py",
-                "dst": "/home/kkrzysztofik/Status/current/src/settings/gunicorn.conf.py"
-            },
-            "supervisor": {
-                "src": "/home/kkrzysztofik/Status/previous/src/settings/supervisor.conf",
-                "dst": "/home/kkrzysztofik/Status/current/src/settings/supervisor.conf"
-            },
-            "localsettings": {
-                "src": "/home/kkrzysztofik/Status/previous/src/settings/localsettings.py",
-                "dst": "/home/kkrzysztofik/Status/current/src/settings/localsettings.py"
-            },
-            "logger": {
-                "src": "/home/kkrzysztofik/Status/previous/src/settings/logger.conf",
-                "dst": "/home/kkrzysztofik/Status/current/src/settings/logger.conf"
-            }
-        },
+        "config": [
+            "src/settings/gunicorn.conf.py",
+            "src/settings/supervisor.conf",
+            "src/settings/localsettings.py",
+            "src/settings/logger.py"
+        ],
 
         "mysql" : {
             "server" : {
@@ -85,11 +73,17 @@ The config is in JSON format::
             ]
         },
 
+        "venv": {
+            "requirements": ["requirements/production.txt"],
+            "update": false,
+            "dir": "env"
+        },
+
         "logger" : {
             "version": 1,
             "formatters": {
                 "simple": {
-                    "format": "%(levelname)s %(message)s"
+                    "format": "%(message)s"
                 },
                 "verbose": {
                     "format": "[%(asctime)s] \"%(message)s\"",
@@ -101,7 +95,7 @@ The config is in JSON format::
                 "console": {
                     "level":"DEBUG",
                     "class":"logging.StreamHandler",
-                    "formatter":"verbose",
+                    "formatter":"simple",
                     "stream" : "ext://sys.stdout"
                 },
                 "graypy": {
@@ -116,11 +110,11 @@ The config is in JSON format::
             "loggers": {
                 "root": {
                     "handlers": ["console"],
-                    "level": "DEBUG"
+                    "level": "INFO"
                 },
                 "deployment": {
                     "handlers": ["console"],
-                    "level": "DEBUG",
+                    "level": "INFO",
                     "qualname": "deployment",
                     "propagate": false
                 }
@@ -140,22 +134,31 @@ source
 * *file* -
   Filename of file used to deploy on remote host, currently supported extensions are .tar.gz, .tgz, .tar
 
-  *Default:* ``deployment.tar.gz``
+  *Default:* ``src.tar.gz``
 
 git
 ^^^
 Section connected with GIT repository
 
 * *repo*
-      Repository used to clone source
+      Repository used to clone source.
+
+      *Default:* fetched from current working directory
+
 * *branch*
       Branch used to clone source
+
+      *Default:* ``master``
+
 * *local*
       Local repository directory, placed inside main local directory
 
-      *Default:* creates folder with current date as name
+      *Default:* current working directory
+
 * *dirs*
       Directories and files which deployment archive is made of
+
+      *Default:* whole repository
 
 remote
 ------
@@ -164,7 +167,8 @@ During application deploy process, SSH with key-based authentication is used. Yo
 * *dir*
     Directory where archive is uploaded during deployment
 
-    *Default:* ``/tmp/``
+    *Default:* current working directory
+
 * *clean*
     Flag used to specify if archive after deployment has to be removed
 
@@ -172,6 +176,9 @@ deploy
 ------
 * *dir*
     Directory where application lives
+
+    *Default:* ``app``
+
 * *pre*
     List of commands launched before deployment
 * *post*
@@ -179,12 +186,38 @@ deploy
 
 config
 ------
-In this section you can configure list of files that should be copied after deployment.::
+In this section you can configure list of files that should be copied after deployment. Using new format, paths are relative to ``deploy_dir\previous`` and are copied to ``deploy_dir\current``::
 
+    new format:
+        "config": [
+            "path",
+            "path2"
+        ]
+
+    old format: (deprecated):
+        "config": {
             "display name": {
                 "src": "absolute path to source file",
                 "dst": "absolute path to destination"
             }
+        }
+
+venv
+----
+In this section, parameters of virtual environment are set.
+
+* *dir*
+    Directory where virtualenv should be located. If not defined, no check is made.
+
+* *requirements*
+    List of requirements files, that are installed after create/check of virtual env
+
+    *Default:* ``["requirements/production.txt"]``
+
+  *update*
+    Update packages during check of virtual environment and requirements
+
+    *Default:* ``false``
 
 mysql
 -----
