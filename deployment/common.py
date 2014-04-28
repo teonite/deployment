@@ -12,54 +12,13 @@ import logging
 import logging.config
 import json
 import traceback
+from collections import Mapping
 
 from fabric.state import env
 from fabric.api import run
 from fabric.context_managers import contextmanager, prefix
 
 import defaults
-
-LOGGING = {
-    "version": 1,
-    "formatters": {
-        "simple": {
-            "format": "%(message)s"
-        },
-        "verbose": {
-            "format": "[%(asctime)s] \"%(message)s\"",
-            "datefmt": "%d/%b/%Y %H:%M:%S"
-        }
-    },
-
-    "handlers": {
-        "console": {
-            "level": "DEBUG",
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
-            "stream": "ext://sys.stdout"
-        },
-        "graypy": {
-            "level": "INFO",
-            "class": "graypy.GELFHandler",
-            "formatter": "verbose",
-            "host": "logs.teonite.net",
-            "port": 12201
-        }
-    },
-
-    "loggers": {
-        "root": {
-            "handlers": ["console"],
-            "level": "DEBUG"
-        },
-        "deployment": {
-            "handlers": ["console"],
-            "level": "DEBUG",
-            "qualname": "deployment",
-            "propagate": False
-        }
-    }
-}
 
 _log = None
 log = None
@@ -82,7 +41,7 @@ def getLogger(config):
 
     if _log is None:
         if not 'logger' in config:
-            _setupLogging(LOGGING)
+            _setupLogging(defaults.LOGGING)
         else:
             _setupLogging(config['logger'])
 
@@ -121,7 +80,7 @@ def pretty_print(msg, level='debug'):
             log.warning('[\x1b[36m%s\x1b[0m] \x1b[33mWARNING\x1b[0m: %s' % (env.host_string, msg))
 
 
-def _parse_config(filename, section=None):
+def _parse_config(filename):
     #pretty_print("Parsing config file: %s" % filename, 'debug')
     try:
         f = open(filename, 'r')
@@ -136,6 +95,24 @@ def _parse_config(filename, section=None):
         return {}
 
 
+def update(d, u, depth=-1):
+    """
+    Recursively merge or update dict-like objects.
+    >>> update({'k1': {'k2': 2}}, {'k1': {'k2': {'k3': 3}}, 'k4': 4})
+    {'k1': {'k2': {'k3': 3}}, 'k4': 4}
+    """
+
+    for k, v in u.iteritems():
+        if isinstance(v, Mapping) and not depth == 0:
+            r = update(d.get(k, {}), v, depth=max(depth - 1, -1))
+            d[k] = r
+        elif isinstance(d, Mapping):
+            d[k] = u[k]
+        else:
+            d = {k: u[k]}
+    return d
+
+
 def prepare_config(config_f=None, remote_tuple=(None, None, None)):
     global config
 
@@ -144,8 +121,9 @@ def prepare_config(config_f=None, remote_tuple=(None, None, None)):
             config = _parse_config("config.json")
         else:
             config = _parse_config(config_f)
-    defaults.config.update(config)
-    config = defaults.config
+
+    config = update(defaults.config, config)
+
     if remote_tuple[0]:
         config['remote']['user'] = remote_tuple[0]
     if remote_tuple[1]:
