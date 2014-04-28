@@ -59,10 +59,12 @@ def get_config_file():
 def main():
     print_usage = None
     run_venv = None
+    venv_dir = None
+
     remote_tuple = (None, None, None)
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:V", ["help", "config=", "remote="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:V:", ["help", "config=", "remote="])
 
         config_f = None
 
@@ -88,8 +90,10 @@ def main():
 
             elif o in ["-V"]:
                 run_venv = True
+                venv_dir = a
 
                 sys.argv.remove(o)
+                sys.argv.remove(a)
 
             else:
                 print("\033[1mPararmeters %s %s unhandled\033[0m" % (o, a))
@@ -119,7 +123,7 @@ def main():
                 return 0
 
             if run_venv:
-                commands['src_remote_venv'].run()
+                commands['src_remote_venv'].run(venv_dir)
                 return 0
 
             if len(sys.argv) == 1:

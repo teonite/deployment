@@ -29,8 +29,7 @@ config = {
     "venv": {
         "dir": "env",
         "requirements": ["requirements/production.txt"],
-        "update": False,
-        "check": False,
+        "update": False
     },
 
     "config": {

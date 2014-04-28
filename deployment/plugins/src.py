@@ -759,7 +759,11 @@ class SrcRemoteVenv(Plugin):
         host = config['remote']['host']
         port = config['remote']['port']
 
-        venv_dir = config['venv']['dir']
+        try:
+            venv_dir = args[0]
+        except IndexError:
+            venv_dir = config['venv']['dir']
+
         update = config['venv']['update']
         requirements_files = config['venv']['requirements']
 
