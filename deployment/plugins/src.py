@@ -13,6 +13,7 @@ from datetime import datetime
 from fabric.context_managers import cd
 from fabric.api import put, settings
 from fabric.contrib import files
+from fabric.context_managers import cd
 
 from git import Repo, InvalidGitRepositoryError
 
@@ -648,6 +649,7 @@ class SrcPreDeploy(Plugin):
         host = config['remote']['host']
         port = config['remote']['port']
         command_list = config['deploy']['pre']
+        remote_dir = config['deploy']['dir']
 
         env.host = host
         env.user = user
@@ -664,7 +666,8 @@ class SrcPreDeploy(Plugin):
         SrcRemoteCheck(config).run()
 
         for i in command_list:
-            run(i)
+            with cd(os.path.join(remote_dir, 'current')):
+                run(i)
 
         pretty_print("[+] Remote pre-deploy command finished", 'info')
 
@@ -702,6 +705,7 @@ class SrcPostDeploy(Plugin):
         host = config['remote']['host']
         port = config['remote']['port']
         command_list = config['deploy']['post']
+        remote_dir = config['deploy']['dir']
 
         env.host = host
         env.user = user
@@ -718,7 +722,8 @@ class SrcPostDeploy(Plugin):
         SrcRemoteCheck(config).run()
 
         for i in command_list:
-            run(i)
+            with cd(os.path.join(remote_dir, 'current')):
+                run(i)
 
         pretty_print("[+] Remote post-deploy command finished", 'info')
 
