@@ -23,7 +23,9 @@ config = {
     "deploy": {
         "dir": "app",
         "pre": [],
-        "post": []
+        "post": [],
+        "changelog": "",
+        "all_commits": True
     },
 
     "venv": {

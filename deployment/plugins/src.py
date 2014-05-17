@@ -19,6 +19,7 @@ from git import Repo, InvalidGitRepositoryError
 from deployment.libs.gitarchive import GitArchiver
 from deployment.common import *
 from deployment.plugin import Plugin
+from deployment.plugins.info import WriteCommitInfo
 
 
 class SrcClone(Plugin):
@@ -833,7 +834,7 @@ class Deploy(Plugin):
 
         date = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        steps = [SrcRemoteCheck, SrcPreDeploy, SrcClone, SrcPrepare, SrcUpload, SrcRemoteExtract,
+        steps = [SrcRemoteCheck, SrcPreDeploy, SrcClone, WriteCommitInfo, SrcPrepare, SrcUpload, SrcRemoteExtract,
                  SrcRemoteDeploy, SrcRemoteConfig, SrcPostDeploy]
 
         SrcRemoteVenv(config).run(install=False)
