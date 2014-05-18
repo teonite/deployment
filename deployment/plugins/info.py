@@ -78,14 +78,17 @@ class WriteCommitInfo(Plugin):
                 commits = "-n1"
         else:
             mode = "w"
-            commits = ""
+            commits = None
 
-        with Prepender(changelog_filename, mode) as changelog_file:
+        with Prepender(os.path.join(local_directory, repo_directory, changelog_filename), mode) as changelog_file:
             head_str = '%s, %s - %s <%s>\n' % (last_commit.hexsha[:8],
                                                time.strftime("%a, %d %b %Y %H:%M", time.gmtime(last_commit.committed_date)),
                                                last_commit.committer.name, last_commit.committer.email)
 
-            gitlog = repo.git.log(commits, '--format=* [%h] - %s')
+            if commits:
+                gitlog = repo.git.log(commits, '--format=* [%h] - %s')
+            else:
+                gitlog = repo.git.log('--format=* [%h] - %s')
 
             if len(gitlog):
                 write_str = head_str + "%s\n\n" % ("#" * len(head_str)) + gitlog + "\n\n"
