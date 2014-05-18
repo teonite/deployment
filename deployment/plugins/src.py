@@ -122,8 +122,13 @@ class SrcClone(Plugin):
         repo.git.pull('origin', branch)
 
         pretty_print('Fetching submodules', 'info')
+        pretty_print('init')
         repo.git.submodule("init")
-        repo.submodule_update(init=True)
+        pretty_print('update')
+        try:
+            repo.submodule_update(init=True, force_remove=True)
+        except InvalidGitRepositoryError:
+            pretty_print("Cannot update submodules, ommiting", 'info')
 
         os.chdir(old_dir)
         #repo.create_remote('origin', config.GIT_REPO)
@@ -666,7 +671,11 @@ class SrcPreDeploy(Plugin):
         SrcRemoteCheck(config).run()
 
         for i in command_list:
-            with cd(os.path.join(remote_dir, 'current')):
+            remote_path = os.path.join(remote_dir, 'current')
+            if files.exists(remote_path, verbose=True):
+                with cd(remote_path):
+                    run(i)
+            else:
                 run(i)
 
         pretty_print("[+] Remote pre-deploy command finished", 'info')
