@@ -159,6 +159,7 @@ class NotifyMail(Plugin):
             subject = templates.SUBJECT_TEMPLATE.format(project_name=project_name)
             message = templates.MESSAGE_TEMPLATE.format(project_name=project_name)
 
+        message = "".join([message, "\n\n--\nSent automatically by TEONITE Deployment (http://teonite.com)\nCopyright (C) TEONITE (http://teonite.com)"])
         send_mail(from_mail, people, subject, message, host=host, user=user, password=password, port=port)
 
         pretty_print('[+] Notify mail finished', 'info')
