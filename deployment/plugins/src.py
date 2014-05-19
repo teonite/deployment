@@ -168,6 +168,7 @@ class SrcPrepare(Plugin):
         archive_file = config['source']['file']
         branch = config['source']['git']['branch']
         dirs = config['source']['git']['dirs']
+        changelog_file = config['deploy']['changelog']
 
         try:
             local_directory = os.path.expanduser(args[0])
@@ -196,9 +197,14 @@ class SrcPrepare(Plugin):
         # compression = file.split('.')
         pretty_print("cwd: %s" % os.getcwd())
 
-        archiver = GitArchiver(main_repo_abspath=os.path.join(os.getcwd(), repo_directory), include_dirs=dirs)
-        archiver.create(os.path.join(os.getcwd(), archive_file))
+        old_dir2 = os.getcwd()
+        os.chdir(repo_directory)
 
+        extra = [os.path.join(changelog_file), ]
+        archiver = GitArchiver(main_repo_abspath=os.getcwd(), include_dirs=dirs, extra=extra)
+        archiver.create(os.path.join(old_dir2, archive_file))
+
+        os.chdir(old_dir2)
         # if (compression[-1] == "gz" and compression[-2] == "tar") or compression[-1] == "tgz":
         #     repo.git.archive-all('--o', os.path.join(os.getcwd(), file), '--format', "tar.gz", 'HEAD',
         #                          '' if not len(dirs) else dirs)

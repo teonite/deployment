@@ -35,7 +35,8 @@ The config is in JSON format::
             "post": [
                 "pip install -r ~/Status/current/src/requirements.txt",
                 "python ~/Status/current/src/tools/manage.py collectstatic --noinput"
-            ]
+            ],
+            "changelog": "CHANGELOG.rst"
         },
 
         "config": [
@@ -175,7 +176,7 @@ During application deploy process, SSH with key-based authentication is used. Yo
 deploy
 ------
 * *dir*
-    Directory where application lives
+    Directory where application lives, for rest of commands in this section is base directory
 
     *Default:* ``app``
 
@@ -183,6 +184,9 @@ deploy
     List of commands launched before deployment
 * *post*
     List of commands launched after deployment
+
+* *changelog*
+    File, which will be overwritten during deployment with changelog based on all commits messages
 
 config
 ------
