@@ -12,6 +12,9 @@ import time
 from git import Repo, InvalidGitRepositoryError
 
 from deployment.libs.prepender import Prepender
+from deployment.libs.mail import send_mail
+
+from deployment import defaults
 from deployment.common import *
 from deployment.plugin import Plugin
 
@@ -103,3 +106,59 @@ class WriteCommitInfo(Plugin):
 
         os.chdir(old_dir)
         pretty_print('[+] Write commit info finished', 'info')
+
+
+class NotifyMail(Plugin):
+    command = 'notify'
+    config = None
+    description = 'Arguments: <none> - send mail with deploy notification'
+
+    def validate_config(self):
+        if not len(config['mail']['project_name']):
+            raise NotConfiguredError("Project name not set.")
+
+        if not len(config['mail']['from_mail']):
+            raise NotConfiguredError("From: mail not set.")
+
+        if not len(config['mail']["people"]):
+            raise NotConfiguredError("No people to notify")
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        project_name = config['mail']['project_name']
+        from_mail = config['mail']['from_mail']
+        people = config['mail']["people"]
+        host = config['mail']['server']['host']
+        user = config['mail']['server']['user']
+        password = config['mail']['server']['password']
+        port = config['mail']['server']['port']
+        local_dir = config['source']['local']
+        repo_dir = config['source']['git']['local']
+
+        template_path = os.path.join(local_dir, repo_dir, config['mail']['template_path'])
+
+        env.host_string = 'localhost'
+        pretty_print('[+] Notify mail start', 'info')
+
+        if not len(template_path):
+            subject = defaults.SUBJECT_TEMPLATE.format(project_name=project_name)
+            message = defaults.MESSAGE_TEMPLATE.format(project_name=project_name)
+        else:
+            template_path = os.path.expanduser(template_path)
+            head, tail = os.path.split(template_path)
+
+            if tail.endswith(".py"):
+                tail = tail[:-3]
+            else:
+                raise NotConfiguredError("Template file must be .py file")
+
+            sys.path.insert(0, head)
+            templates = __import__(tail)
+
+            subject = templates.SUBJECT_TEMPLATE.format(project_name=project_name)
+            message = templates.MESSAGE_TEMPLATE.format(project_name=project_name)
+
+        send_mail(from_mail, people, subject, message, host=host, user=user, password=password, port=port)
+
+        pretty_print('[+] Notify mail finished', 'info')

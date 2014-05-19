@@ -80,6 +80,21 @@ The config is in JSON format::
             "dir": "env"
         },
 
+        "mail": {
+            "project_name": "Status",
+            "from_mail": "TEONITE <notification@teonite.com>",
+            "server": {
+                "user": "notification@teonite.com",
+                "password": "notification_sample_password",
+                "host": "smtp.gmail.com",
+                "port": 587
+            },
+            "people": [
+                "kkrzysztofik@teonite.com"
+            ],
+            "template_path": "deployment/template.py"
+        },
+
         "logger" : {
             "version": 1,
             "formatters": {
@@ -269,6 +284,25 @@ Requirements:
 
 * *apps*
     Supervisor processes which will be restarted
+
+mail
+----
+
+Section used by ``notify`` command to send mails with notification about deployment.
+
+Required:
+
+* *project_name*
+* *from_mail* - mail displayed in From: field
+* *people* - list of emails to notify
+* *user*
+* *password**
+
+Optional:
+
+* *host* - default: ``localhost``
+* *port* - default: ``25``
+* *template_path* - custom mail template. Must be .py file and contain two variables ``SUBJECT_TEMPLATE`` and ``MESSAGE_TEMPLATE``. Available variables: ``{project_name}``
 
 logger
 ------

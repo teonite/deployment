@@ -5,4 +5,4 @@
 # Copyright (C) 2012 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
 #
 
-version = "2.0.5"
+version = "2.0.6"

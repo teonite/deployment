@@ -20,7 +20,7 @@ from git import Repo, InvalidGitRepositoryError
 from deployment.libs.gitarchive import GitArchiver
 from deployment.common import *
 from deployment.plugin import Plugin
-from deployment.plugins.info import WriteCommitInfo
+from deployment.plugins.info import WriteCommitInfo, NotifyMail
 
 
 class SrcClone(Plugin):
@@ -187,7 +187,7 @@ class SrcPrepare(Plugin):
         os.chdir(local_directory)
 
         try:
-            repo = Repo(repo_directory)
+            Repo(repo_directory)
             pretty_print('Repository found.', 'info')
         except InvalidGitRepositoryError:  # Repo doesn't exists
             raise NotConfiguredError('Repository not found. Please provide correct one.')
@@ -874,4 +874,10 @@ class Deploy(Plugin):
             clean.run(date)
         else:
             pretty_print('Cleaning not selected, omitting.', 'info')
+
+        try:
+            NotifyMail(config).run()
+        except NotConfiguredError:
+            pretty_print('Mail notify not configured, omitting.')
+
         pretty_print("[+] Deployment finished.", 'info')

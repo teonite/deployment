@@ -60,6 +60,24 @@ config = {
         "user": "admin",
         "password": "",
         "apps": []
+    },
+
+    "mail": {
+        "project_name": "",
+
+        "from_mail": "",
+
+        "server": {
+            "user": "",
+            "password": "",
+            "host": "localhost",
+            "port": "25",
+        },
+
+        "people": [
+        ],
+
+        "template_path": "",
     }
 }
 
@@ -122,3 +140,6 @@ LOGGING = {
         }
     }
 }
+
+SUBJECT_TEMPLATE = "[{project_name}] New version deployed."
+MESSAGE_TEMPLATE = "New version of {project_name} has been deployed."
