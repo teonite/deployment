@@ -326,6 +326,11 @@ class MySQLDBMigrate(Plugin):
         dbuser = config['mysql']['server']['user']
         dbpassword = config['mysql']['server']['password']
 
+        try:
+            database = args[0]
+        except IndexError:
+            database = config['mysql']['server']['database']
+
         env.user = user
         env.host = host
         env.port = port
