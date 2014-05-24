@@ -6,7 +6,7 @@ with open('README.md', 'r') as fh:
     readme = fh.readlines()
 
 setup(
-    name='deployment',
+    name='tnt-deployment',
     version=version,
     author='TEONITE',
     author_email='kkrzysztofik@teonite.com',
@@ -15,11 +15,10 @@ setup(
     url='http://teonite.com/',
     description='Deployment, provisioning and database migration tool.',
     long_description='\n'.join(readme),
-    license='Proprietary',
+    license='GPL 2.0',
     install_requires=[
         "Fabric >= 1.5.1",
         "GitPython >= 0.3.2.RC1",
-        "graypy >= 0.2.7",
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
