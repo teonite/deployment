@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+#
+# Deployment, provisioning and database migration tool
+#
+# Copyright (C) 2012-2014 TEONITE
+# Copyright (C) 2012-2014 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
+#
+
+from __future__ import print_function
+
+import os
+import sys
+import getopt
+from collections import OrderedDict
+
+from fabric.state import env
+
+from deployment import plugin, common, defaults
+from deployment.common import pretty_print
+
+env.host_string = 'localhost'
+env.use_ssh_config = True
+
+
+def usage(commands):
+    from deployment.version import version
+    orderedDict = OrderedDict(sorted(commands.items()))
+
+    print(' ')
+    print('				TEONITE deployment and database migration tool')
+    print('						version %s' % version)
+    print('					Copyright (C) 2012-2014 TEONITE')
+    print(' ')
+    print('Usage:')
+    print('	python %s <command> <parameter>' % os.path.basename(__file__))
+    print(' ')
+    print('Commands:')
+    print(' If no command provided, deploy is run')
+    for command in orderedDict:
+        print('	- %s - %s' % (commands[command].command, commands[command].description))
+
+    print(' ')
+    print('Parameters: (optional)')
+    print('	-c, --config <filename> - if not selected, config.json is selected')
+    print('	-h, --help - display this message and exit')
+    print('	-r, --remote <user@host:port>')
+
+
+def get_config_file():
+    for path in defaults.path_list:
+        if os.path.isfile(path):
+            # pretty_print("File found in %s" % path)
+            return path
+
+    print("Config file not found in default localizations.")
+    return None
+
+
+def main():
+    print_usage = None
+    run_venv = None
+    venv_dir = None
+
+    remote_tuple = (None, None, None)
+
+    try:
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "hc:r:V:", ["help", "config=", "remote="])
+
+        config_f = None
+
+        for o, a in opts:
+            if o in ["-c", "--config"]:
+                config_f = a
+                # pretty_print("-c found")
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
+
+            elif o in ["-h", "--help"]:
+                print_usage = True
+                # pretty_print("-c found")
+
+                sys.argv.remove(o)
+
+            elif o in ["-r", "--remote"]:
+                remote_tuple = common.parse_remote(a)
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
+
+            elif o in ["-V"]:
+                run_venv = True
+                venv_dir = a
+
+                sys.argv.remove(o)
+                sys.argv.remove(a)
+
+            else:
+                print("\033[1mPararmeters %s %s unhandled\033[0m" % (o, a))
+
+        if not config_f:
+            # pretty_print("Config not provided, searching for default one")
+            config_f = get_config_file()
+
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        pretty_print(str(err))  # will print something like "option -a not recognized"
+        return 1
+
+    # if not config_f or not os.path.isfile(config_f):
+    #     print("\033[1mCONFIG ERROR: Config file does not exists: %s" % config_f)
+    #     print("CONFIG ERROR: Please provide correct one.\033[0m")
+    #     return 1
+
+    try:
+        config = common.prepare_config(config_f, remote_tuple)
+        common.prepare_logger(config)
+        commands = plugin.init_plugins(config)
+
+        try:
+            if print_usage is not None or (len(sys.argv) > 1 and sys.argv[1] in ['usage', 'help']):
+                usage(commands)
+                return 0
+
+            if run_venv:
+                commands['src_remote_venv'].run(venv_dir)
+                return 0
+
+            if len(sys.argv) == 1:
+                commands['deploy'].run()
+                return 0
+
+
+            commands[sys.argv[1]].run(*sys.argv[2:])
+        except KeyError:
+            exception_type, exception_value, exception_traceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+            return 1
+
+    except KeyError:
+        usage(commands)
+    except SystemExit as ex:
+        if ex.code == 0:
+            return 0
+        else:
+            exception_type, exception_value, exception_traceback = sys.exc_info()
+            pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+            return 1
+    except:
+        exception_type, exception_value, exception_traceback = sys.exc_info()
+        pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+        return 1
+
+if __name__ == "__main__":
+    main()

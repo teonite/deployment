@@ -1,0 +1,4 @@
+include README.rst
+include setup.py
+include conf/conf.json.template
+recursive-include deployment *.py
