@@ -270,8 +270,8 @@ class SrcUpload(Plugin):
         os.chdir(old_dir)
 
 
-class SrcClean(Plugin):
-    command = 'src_clean'
+class SrcLocalClean(Plugin):
+    command = 'src_local_clean'
     config = None
     description = 'Arguments: <to_delete> - delete file/folder provided as argument'
 
@@ -287,10 +287,10 @@ class SrcClean(Plugin):
         try:
             to_delete = args[0]
         except IndexError:
-            raise NotConfiguredError("src_clean need arg 'to_delete' ")
+            raise NotConfiguredError("src_local_clean need arg 'to_delete' ")
         local_directory = config['source']['local']
 
-        pretty_print('[+] Starting src_clean.', 'info')
+        pretty_print('[+] Starting src_local_clean.', 'info')
 
         old_dir = os.getcwd()
         os.chdir(local_directory)
@@ -304,7 +304,34 @@ class SrcClean(Plugin):
             shutil.rmtree(to_delete)
 
         os.chdir(old_dir)
-        pretty_print('[+] Finished src_clean.', 'info')
+        pretty_print('[+] Finished src_local_clean.', 'info')
+
+
+class SrcRemoteClean(Plugin):
+    command = 'src_remote_clean'
+    config = None
+    description = 'Arguments: <to_delete> - delete file/folder provided as argument'
+
+    def validate_config(self):
+        if not 'file' in config['source'] or not len(config['source']['file']):
+            raise NotConfiguredError("File name not set.")
+        if not 'dir' in config['remote'] or not len(config['remote']['dir']):
+            raise NotConfiguredError("Remote dir not set.")
+
+    def run(self, *args, **kwargs):
+        self.validate_config()
+
+        try:
+            to_delete = args[0]
+        except IndexError:
+            raise NotConfiguredError("src_remote_clean need arg 'to_delete' ")
+        remote_dir = config['remote']['dir']
+
+        pretty_print('[+] Starting src_remote_clean.', 'info')
+
+        remote_path = os.path.join(remote_dir, to_delete)
+        run('rm -rf {}'.format(remote_path))
+        pretty_print('[+] Finished src_remote_clean.', 'info')
 
 
 class SrcRemoteCheck(Plugin):
@@ -815,8 +842,12 @@ class Deploy(Plugin):
         if not 'remote' in config:
             raise NotConfiguredError("Remote section does not exists")
 
+        if not 'clean' in config['source']:
+            pretty_print("Local clean flag not set, using True", 'info')
+            config['source']['clean'] = True
+
         if not 'clean' in config['remote']:
-            pretty_print("Clean flag not set, using True", 'info')
+            pretty_print("Remote clean flag not set, using True", 'info')
             config['remote']['clean'] = True
 
     def run(self, *args, **kwargs):
@@ -847,11 +878,19 @@ class Deploy(Plugin):
 
         SrcRemoteVenv(config).run(check=False)
 
-        pretty_print('Cleaning flag: %s' % config['remote']['clean'])
-        if config['remote']['clean']:
-            clean = SrcClean(config)
+        pretty_print('Local cleaning flag: %s' % config['source']['clean'])
+        if config['source']['clean']:
+            clean = SrcLocalClean(config)
             clean.run(config['source']['file'])
             clean.run(date)
         else:
-            pretty_print('Cleaning not selected, omitting.', 'info')
+            pretty_print('Local cleaning not selected, omitting.', 'info')
+
+        pretty_print('Remote cleaning flag: %s' % config['remote']['clean'])
+        if config['remote']['clean']:
+            clean = SrcRemoteClean(config)
+            clean.run(config['source']['file'])
+        else:
+            pretty_print('Remote cleaning not selected, omitting.', 'info')
+
         pretty_print("[+] Deployment finished.", 'info')
