@@ -1,7 +1,7 @@
 {
     "source": {
         "git": {
-            "repo": "git@git.reopo.com:repo.git",
+            "repo": "git@git.repo.com:repo.git",
             "branch": "master",
             "local": "repo",
             "dirs" : ["src"]
@@ -12,7 +12,7 @@
     },
     "remote": {
         "host": "remote.host.com",
-        "user": "kkrzysztofik",
+        "user": "admin",
         "port": 22,
         "dir": "~",
         "clean": true
@@ -47,8 +47,8 @@
         },
         "shell" : {
             "dumpfile" : "temp.sql",
-            "user" : "kkrzysztofik",
-            "host" : "192.168.56.101",
+            "user" : "root",
+            "host" : "localhost",
             "port" : 22,
             "migration_dir" : "test"
         }
@@ -88,7 +88,7 @@
                 "level":"INFO",
                 "class":"graypy.GELFHandler",
                 "formatter":"verbose",
-                "host":"logs.teonite.net",
+                "host":"remote.host.com",
                 "port":12201
             }
         },
