@@ -1,26 +1,26 @@
 {
     "source": {
         "git": {
-            "repo": "git@git.teonite.net:teonite/status.git",
+            "repo": "git@git.repo.com:repo.git",
             "branch": "master",
             "local": "repo",
             "dirs" : ["src"]
         },
         "local": "test",
-        "file": "arch.tar.gz"
+        "file": "arch.tar.gz",
+	"clean": true
     },
     "remote": {
-        "host": "192.168.56.101",
-        "user": "kkrzysztofik",
+        "host": "remote.host.com",
+        "user": "admin",
         "port": 22,
         "dir": "~",
         "clean": true
     },
 
     "deploy": {
-        "dir": "Status",
+        "dir": "app",
         "pre": [
-            "cat ~/.bashrc",
             "env"
         ],
         "post": [
@@ -29,23 +29,12 @@
         ]
     },
 
-    "config": {
-        "gunicorn": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/gunicorn.conf.py",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/gunicorn.conf.py"
-        },
-        "supervisor": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/supervisor.conf",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/supervisor.conf"
-        },
-        "localsettings": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/localsettings.py",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/localsettings.py"
-        },
-        "logger": {
-            "src": "/home/kkrzysztofik/Status/previous/src/settings/logger.conf",
-            "dst": "/home/kkrzysztofik/Status/current/src/settings/logger.conf"
-        }
+    "config": [
+            "settings/gunicorn.conf.py",
+            "settings/supervisor.conf",
+            "settings/localsettings.py",
+            "settings/logger.conf"
+        ]
     },
 
     "mysql" : {
@@ -58,8 +47,8 @@
         },
         "shell" : {
             "dumpfile" : "temp.sql",
-            "user" : "kkrzysztofik",
-            "host" : "192.168.56.101",
+            "user" : "root",
+            "host" : "localhost",
             "port" : 22,
             "migration_dir" : "test"
         }
@@ -99,7 +88,7 @@
                 "level":"INFO",
                 "class":"graypy.GELFHandler",
                 "formatter":"verbose",
-                "host":"logs.teonite.net",
+                "host":"remote.host.com",
                 "port":12201
             }
         },

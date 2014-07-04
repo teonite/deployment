@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
-# Deployment and database migration tool
+# Deployment, provisioning and database migration tool
 #
-# Copyright (C) 2012 TEONITE
-# Copyright (C) 2012 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
+# Copyright (C) 2012-2014 TEONITE
+# Copyright (C) 2012-2014 Krzysztof Krzysztofik <krzysztof.krzysztofik@teonite.com>
 #
 
 from __future__ import print_function
@@ -123,7 +123,8 @@ def main():
                 return 0
 
             if run_venv:
-                commands['src_remote_venv'].run(venv_dir)
+                venv_path = os.path.join(config['deploy']['dir'], venv_dir)
+                commands['src_remote_venv'].run(venv_path)
                 return 0
 
             if len(sys.argv) == 1:
