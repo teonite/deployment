@@ -114,7 +114,7 @@ def update(d, u, depth=-1):
     return d
 
 
-def prepare_config(config_f=None, remote_tuple=(None, None, None)):
+def prepare_config(config_f=None, remote_tuple=(None, None, None), branch=None):
     global config
 
     if not config:
@@ -131,6 +131,9 @@ def prepare_config(config_f=None, remote_tuple=(None, None, None)):
         config['remote']['host'] = remote_tuple[1]
     if remote_tuple[2]:
         config['remote']['port'] = remote_tuple[2]
+
+    if branch:
+        config['source']['git']['branch'] = branch
 
     return config
 
