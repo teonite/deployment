@@ -83,13 +83,6 @@
                 "class":"logging.StreamHandler",
                 "formatter":"verbose",
                 "stream" : "ext://sys.stdout"
-            },
-            "graypy": {
-                "level":"INFO",
-                "class":"graypy.GELFHandler",
-                "formatter":"verbose",
-                "host":"remote.host.com",
-                "port":12201
             }
         },
 

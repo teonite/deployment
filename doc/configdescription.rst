@@ -113,13 +113,6 @@ The config is in JSON format::
                     "class":"logging.StreamHandler",
                     "formatter":"simple",
                     "stream" : "ext://sys.stdout"
-                },
-                "graypy": {
-                    "level":"INFO",
-                    "class":"graypy.GELFHandler",
-                    "formatter":"verbose",
-                    "host":"logs.teonite.net",
-                    "port":12201
                 }
             },
 
