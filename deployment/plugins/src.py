@@ -76,7 +76,7 @@ class SrcClone(Plugin):
         repo = config['source']['git']['repo']
 
         env.host_string = 'localhost'
-        pretty_print('[+] Repository clone start: %s' % local_directory, 'info')
+        pretty_print('[+] Repository check start: %s' % local_directory, 'info')
 
         # if not len(directory):
         #     pretty_print('Directory not selected, assuming current one.', 'info')
@@ -92,22 +92,19 @@ class SrcClone(Plugin):
             #     raise Exception('Cannot create directory %s, please create the folder manually' % directory)
 
         old_dir = os.getcwd()
-        try:
-            os.chdir(local_directory)
-        except OSError:
-            os.mkdir
+        os.chdir(local_directory)
 
+        pretty_print("Checking if repository exists %s" % os.path.join(local_directory, repo_directory), "info")
         try:
             if not os.path.isdir(os.path.join(repo_directory, ".git")):  # repo = Repo(dir)
                 if os.path.isdir(repo_directory):
                     raise IOError('Directory already exists and is not repository. Clone will fail. Please check your '
                                   'configuration')
-                pretty_print('KURWO TY')
                 raise InvalidGitRepositoryError()
 
             repo = Repo(repo_directory)
 
-            pretty_print('Repository found. Branch: %s' % repo.active_branch, 'info')
+            pretty_print('Repository found.', 'info')
 
         except InvalidGitRepositoryError:  # Repo doesn't exists
             pretty_print('Repository not found. Creating new one, using %s.' % repo, 'info')
