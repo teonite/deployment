@@ -59,6 +59,9 @@ class SrcClone(Plugin):
             config['source']['local'] = os.getcwd()
         config['source']['local'] = os.path.expanduser(config['source']['local'])
 
+        if not os.path.isdir(config['source']['local']):
+            raise NotConfiguredError("config['source']['local'] directory does not exists")
+
     def run(self, *args, **kwargs):
         self.validate_config()
 
