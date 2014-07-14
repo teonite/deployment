@@ -205,7 +205,11 @@ class SrcPrepare(Plugin):
         old_dir2 = os.getcwd()
         os.chdir(repo_directory)
 
-        extra = [os.path.join(changelog_file), ]
+        if len(changelog_file):
+            extra = [os.path.join(changelog_file), ]
+        else:
+            extra = []
+
         archiver = GitArchiver(main_repo_abspath=os.getcwd(), include_dirs=dirs, extra=extra)
         archiver.create(os.path.join(old_dir2, archive_file))
 
