@@ -88,14 +88,20 @@ class WriteCommitInfo(Plugin):
                                                 time.strftime(u"%a, %d %b %Y %H:%M", time.gmtime(last_commit.committed_date)),
                                                 last_commit.committer.name, last_commit.committer.email)
 
+            pretty_print("Getting git log", "info")
             if commits:
                 gitlog = repo.git.log(commits, u'--format=* [%h] - %s')
             else:
                 gitlog = repo.git.log(u'--format=* [%h] - %s')
 
             if len(gitlog):
-                write_str = head_str + u"%s\n\n" % (u"#" * len(head_str)) + gitlog + u"\n\n"
-                changelog_file.write(write_str)
+                pretty_print("Formatting gitlog", "info")
+                write_str = head_str + u"%s\n\n" % (u"#" * len(head_str)) + unicode(gitlog, 'utf8') + u"\n\n"
+                pretty_print("Writting gitlog to file", "info")
+                changelog_file.write(write_str.encode("utf8"))
+                pretty_print("Git log written")
+            else:
+                pretty_print("No git log to write", "info")
 
         # compression = file.split('.')
         pretty_print("cwd: %s" % os.getcwd())
