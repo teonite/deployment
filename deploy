@@ -11,6 +11,7 @@ from __future__ import print_function
 import os
 import sys
 import getopt
+import traceback
 from collections import OrderedDict
 
 from fabric.state import env
@@ -150,6 +151,7 @@ def main():
     except:
         exception_type, exception_value, exception_traceback = sys.exc_info()
         pretty_print("Something went wrong. Message: %s - %s" % (exception_type, exception_value), 'error')
+        pretty_print(traceback.format_exc(), 'debug')
         return 1
 
 if __name__ == "__main__":
