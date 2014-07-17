@@ -22,6 +22,7 @@ from deployment.libs.gitarchive import GitArchiver
 from deployment.common import *
 from deployment.plugin import Plugin
 from deployment.plugins.info import WriteCommitInfo, NotifyMail
+from deployment.plugins.supervisor import Supervisor
 
 
 class SrcClone(Plugin):
@@ -879,7 +880,6 @@ class Deploy(Plugin):
             pretty_print("Remote clean flag not set, using True", 'info')
             config['remote']['clean'] = True
 
-
     def run(self, *args, **kwargs):
         self.validate_config()
 
@@ -907,6 +907,11 @@ class Deploy(Plugin):
                 step(config).run()
 
         SrcRemoteVenv(config).run(check=False)
+
+        try:
+            Supervisor(config).run()
+        except NotConfiguredError:
+            pretty_print('Supervisor not configured, ommiting', 'info')
 
         pretty_print('Local cleaning flag: %s' % config['source']['clean'])
         if config['source']['clean']:
