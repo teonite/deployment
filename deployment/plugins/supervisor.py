@@ -49,7 +49,7 @@ class Supervisor(Plugin):
             if not 'apps' in self.config['supervisor']:
                 raise NotConfiguredError("Apps not set")
 
-            if not type(self.config['supervisor']['apps']) == type(list()):
+            if not isinstance(self.config['supervisor']['apps'], list):
                 raise Exception("Wrong format of 'apps' section - should be list")
 
             apps = self.config['supervisor']['apps']
