@@ -17,7 +17,7 @@ setup(
     long_description='\n'.join(readme),
     license='GPL 2.0',
     install_requires=[
-        "Fabric >= 1.5.1",
+        "Fabric == 1.9.0",
         "GitPython >= 0.3.2.RC1",
     ],
     classifiers=[
