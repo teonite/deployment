@@ -22,8 +22,9 @@ setup(
     ],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
-        "License :: Other/Proprietary License",
-        "Programming Language :: Python :: 2.7"
+        "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+        "Programming Language :: Python :: 2.7",
+        "Topic :: Software Development :: Build Tools",
     ],
     data_files=[('deployment/conf/', ['conf/conf.json.template'])]
 )
