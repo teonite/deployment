@@ -12,7 +12,7 @@ setup(
     author_email='kkrzysztofik@teonite.com',
     packages=['deployment', 'deployment.plugins', 'deployment.libs'],
     scripts=['deploy'],
-    url='http://teonite.com/',
+    url='https://github.com/teonite/deployment',
     description='Deployment, provisioning and database migration tool.',
     long_description='\n'.join(readme),
     license='GPL 2.0',
