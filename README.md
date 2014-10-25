@@ -12,4 +12,4 @@ all operations on the remote server).
 
 Full documentation can be found here:
 
-https://tnt.sh/public/deployment/I7HOGGFV2INL/index.html
+http://deployment.readthedocs.org/en/latest/
